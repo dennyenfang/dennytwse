@@ -1,0 +1,9 @@
+[project]
+name = "denny888"
+version = "1.0.0"
+description = "Denny 888 US stock MACD PWA"
+requires-python = ">=3.13"
+dependencies = []
+
+[dependency-groups]
+dev = ["workers-py", "workers-runtime-sdk"]

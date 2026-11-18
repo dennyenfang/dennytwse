@@ -48,3 +48,9 @@ curl -fsS http://127.0.0.1:5001/healthz
 計時器每兩分鐘檢查 `main`。新版本通過獨立資料庫測試後才會切換，實際服務的 `/healthz` 回傳狀態及完整 commit SHA。啟動失敗會回到前一個可用版本。資料庫存於 `~/.local/share/denny888/data/portfolio.db`，更版前的最近五份快照存於 `backups/`。套件安裝、測試與服務分別在 Bubblewrap 裡執行，GitHub 憑證位於沙箱外。若更新部署腳本或 systemd 單元，請審查後在主機重新執行安裝程式。
 
 手動觸發檢查可執行 `systemctl --user start denny888-deploy.service`，查看最近紀錄可執行 `journalctl --user -u denny888-deploy.service -n 50`。
+
+## Cloudflare Workers 部署
+
+Cloudflare 版本使用 Python Workers + D1，行情由 Yahoo Finance chart API 提供；持股 API 與整個網站應由 Cloudflare Access 保護。D1 資料庫名稱為 `denny123`，資料庫 ID 已填入 `wrangler.jsonc`。Google Sheet ID 與分頁 GID 應以 Worker 私密變數 `SHEET_ID` / `SHEET_GID` 設定；勿將 Google Sheet ID 或 `.env` 提交到 Git。
+
+`main` 分支已連結 Cloudflare Workers Builds。部署環境需使用 `uv run pywrangler deploy` 以打包 Python Worker，D1 綁定與 migration 設定見 `wrangler.jsonc` 與 `migrations/`。Python Worker 使用 Cloudflare 支援的 Worker runtime，與本機 Flask/SQLite 執行環境分開。
