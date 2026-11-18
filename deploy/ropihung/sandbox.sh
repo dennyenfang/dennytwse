@@ -62,6 +62,7 @@ with open("/tmp/snapshot.db", "rb") as snapshot:
     serve)
         box+=(--bind "$store/data" /data --setenv DENNY888_DB_PATH /data/portfolio.db
               --setenv DENNY888_PUBLIC_SHARED 1
+              --setenv DENNY888_PUBLIC_EDITING "${DENNY888_PUBLIC_EDITING:-0}"
               --setenv DENNY888_ACCESS_TEAM_URL "${DENNY888_ACCESS_TEAM_URL:-}"
               --setenv DENNY888_ACCESS_AUD "${DENNY888_ACCESS_AUD:-}"
               --setenv DENNY888_EDITOR_EMAILS "${DENNY888_EDITOR_EMAILS:-}"

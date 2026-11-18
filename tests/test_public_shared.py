@@ -29,7 +29,7 @@ class SharedPortfolioTest(unittest.TestCase):
         resources = ExitStack()
         self.addCleanup(resources.close)
         directory = resources.enter_context(tempfile.TemporaryDirectory())
-        resources.enter_context(patch.multiple(portfolio, PUBLIC_SHARED=True, ACCESS_TEAM=self.team,
+        resources.enter_context(patch.multiple(portfolio, PUBLIC_SHARED=True, PUBLIC_EDITING=False, ACCESS_TEAM=self.team,
                                         ACCESS_AUD=self.audience, EDITOR_EMAILS=set(self.editors),
                                         PUBLIC_ORIGIN=self.origin, DB_PATH=Path(directory) / "db.sqlite3"))
         resources.enter_context(patch.object(jwt.PyJWKClient, "fetch_data", return_value={"keys": [self.public_key]}))
@@ -81,6 +81,36 @@ class SharedPortfolioTest(unittest.TestCase):
         self.assertEqual(self.client.post("/api/sync-sheet", headers=valid).status_code, 403)
         self.assertEqual(self.client.delete(managed + "/TEST", headers=self.headers(self.editors[1])).status_code, 200)
         self.assertEqual(self.client.get(public).json, [])
+
+    def test_public_editing_is_opt_in_and_scoped_to_management(self):
+        same_origin = {"Origin": self.origin}
+        holding = {"symbol": "TEST", "shares": 2, "cost": 10}
+        with patch.multiple(portfolio, PUBLIC_EDITING=True, SHEET_ID=""), \
+             patch.object(portfolio, "verified_editor", side_effect=AssertionError("guest requested JWT verification")):
+            self.assertEqual(self.client.get("/api/site-mode").json, {"publicShared": True, "canEdit": False})
+            self.assertEqual(self.client.get("/manage/api/site-mode").json, {"publicShared": True, "canEdit": True})
+            with self.client.get("/manage/") as page:
+                self.assertEqual(page.status_code, 200)
+            for headers in ({}, {"Origin": "https://another.example"}):
+                self.assertEqual(self.client.post("/manage/api/holdings", json=holding, headers=headers).status_code, 403)
+                self.assertEqual(self.client.delete("/manage/api/holdings/TEST", headers=headers).status_code, 403)
+                self.assertEqual(self.client.post("/manage/api/scan", headers=headers).status_code, 403)
+                self.assertEqual(self.client.post("/manage/api/sync-sheet", headers=headers).status_code, 403)
+            self.assertEqual(self.client.post("/api/holdings", json=holding, headers=same_origin).status_code, 403)
+            self.assertEqual(self.client.post("/api/sync-sheet", headers=same_origin).status_code, 403)
+            self.assertEqual(self.client.post("/manage/api/holdings", data=holding, headers=same_origin).status_code, 415)
+            self.assertEqual(self.client.post("/manage/api/holdings", json={"symbol": "TEST", "shares": "inf", "cost": 5}, headers=same_origin).status_code, 400)
+            self.assertEqual(self.client.post("/manage/api/holdings", json=holding, headers=same_origin).status_code, 200)
+            holding["shares"] = 4
+            self.assertEqual(self.client.post("/manage/api/holdings", json=holding, headers=same_origin).status_code, 200)
+            self.assertEqual(self.client.get("/api/holdings").json, [holding])
+            self.assertEqual(self.client.delete("/api/holdings/TEST", headers=same_origin).status_code, 403)
+            self.assertEqual(self.client.delete("/manage/api/holdings/TEST", headers=same_origin).status_code, 200)
+            self.assertEqual(self.client.get("/api/holdings").json, [])
+            self.assertEqual(self.client.post("/manage/api/scan", headers=same_origin).status_code, 200)
+            sync = self.client.post("/manage/api/sync-sheet", headers=same_origin)
+            self.assertEqual(sync.status_code, 200)
+            self.assertFalse(sync.json["configured"])
 
     def test_public_quotes_and_scan_leave_database_unchanged(self):
         with portfolio.connect() as db:

@@ -6,6 +6,7 @@ import csv
 import io
 import urllib.request
 import json
+import math
 import os
 import re
 from contextlib import closing, contextmanager
@@ -33,6 +34,7 @@ SHEET_ID = os.environ.get("SHEET_ID", "")
 SHEET_GID = os.environ.get("SHEET_GID", "0")
 SHEET_CACHE = {"at": 0.0, "count": 0, "error": None}
 PUBLIC_SHARED = os.environ.get("DENNY888_PUBLIC_SHARED", "0").strip().lower() not in {"", "0", "false", "off"}
+PUBLIC_EDITING = os.environ.get("DENNY888_PUBLIC_EDITING", "").strip() == "1"
 ACCESS_TEAM = os.environ.get("DENNY888_ACCESS_TEAM_URL", "").rstrip("/")
 ACCESS_AUD = os.environ.get("DENNY888_ACCESS_AUD", "")
 EDITOR_EMAILS = {email.strip().casefold() for email in os.environ.get("DENNY888_EDITOR_EMAILS", "").split(",") if email.strip()}
@@ -66,7 +68,7 @@ def protect_shared_portfolio():
         return
     managing = request.path == "/manage" or request.path.startswith("/manage/")
     if managing:
-        if not verified_editor():
+        if not PUBLIC_EDITING and not verified_editor():
             return jsonify(error="此頁面僅供授權管理員使用。"), 403
         g.editor = True
     if request.method not in {"GET", "HEAD", "OPTIONS"}:
@@ -83,7 +85,9 @@ def read_only_request():
 
 
 def market_error(exc):
-    return "暫時無法取得此查詢的行情資料。" if read_only_request() else str(exc)
+    if read_only_request() or (PUBLIC_SHARED and PUBLIC_EDITING):
+        return "暫時無法取得此查詢的行情資料。"
+    return str(exc)
 
 
 @contextmanager
@@ -155,7 +159,8 @@ def sync_sheet_holdings(force=False):
                     db.execute("UPDATE holdings SET shares=?,cost=? WHERE symbol=?", (shares if shares is not None else 5 if existing["shares"] <= 0 else existing["shares"], cost if cost is not None else existing["cost"], symbol))
         SHEET_CACHE.update({"at": now, "count": len([r for r in rows if str(r.get(symbol_col, "")).strip()]), "error": None})
     except Exception as exc:
-        SHEET_CACHE.update({"at": now, "count": 0, "error": str(exc)})
+        error = "暫時無法同步已設定的試算表。" if PUBLIC_SHARED and PUBLIC_EDITING else str(exc)
+        SHEET_CACHE.update({"at": now, "count": 0, "error": error})
     return {**SHEET_CACHE, "new": imported if SHEET_CACHE["error"] is None else 0}
 
 
@@ -189,7 +194,7 @@ def index():
 @app.get("/api/site-mode")
 @app.get("/manage/api/site-mode")
 def site_mode():
-    can_edit = not PUBLIC_SHARED or g.get("editor", False) or verified_editor()
+    can_edit = not PUBLIC_SHARED or g.get("editor", False) or (not PUBLIC_EDITING and verified_editor())
     return jsonify(publicShared=PUBLIC_SHARED, canEdit=can_edit)
 
 
@@ -232,16 +237,20 @@ def list_holdings():
 @app.post("/api/holdings")
 @app.post("/manage/api/holdings")
 def save_holding():
+    if PUBLIC_SHARED and PUBLIC_EDITING and not request.is_json:
+        return jsonify(error="請使用 JSON 格式送出持股。"), 415
     try:
         data = request.get_json(force=True)
+        if not isinstance(data, dict):
+            raise ValueError("請提供股票代號、股數及成本。")
         symbol = valid_symbol(data.get("symbol"))
         shares, cost = float(data.get("shares")), float(data.get("cost"))
-        if shares <= 0 or cost < 0:
-            raise ValueError("股數須大於 0，持有成本不可小於 0。")
+        if not math.isfinite(shares) or not math.isfinite(cost) or shares <= 0 or cost < 0:
+            raise ValueError("股數與持有成本須為有限數值，股數須大於 0，成本不可小於 0。")
         with connect() as db:
             db.execute("INSERT INTO holdings(symbol, shares, cost) VALUES(?,?,?) ON CONFLICT(symbol) DO UPDATE SET shares=excluded.shares, cost=excluded.cost", (symbol, shares, cost))
         return jsonify({"symbol": symbol, "shares": shares, "cost": cost})
-    except (ValueError, TypeError) as exc:
+    except (ValueError, TypeError, OverflowError) as exc:
         return jsonify({"error": str(exc)}), 400
 
 
