@@ -20,11 +20,50 @@
     .detail-dialog{background:#fff;color:#27343f;border:1px solid #d8e0e7;box-shadow:0 24px 80px #0c243018}.detail-head{border-bottom:1px solid #e5ebf0;padding-bottom:10px}.detail-head h2{font:600 20px/1.1 ui-monospace,SFMono-Regular,Menlo,monospace;color:#1e2a34}.detail-head #detailClose{background:#fff;color:#566675;border-color:#d8e0e7}.detail-head .sub{color:#758391}.detail-quote{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 1px 8px}.detail-price-row{display:flex;align-items:baseline;gap:10px}.detail-price{font:500 27px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:#202b34}.detail-daychange{font:600 12px ui-monospace,SFMono-Regular,Menlo,monospace}.detail-lamps{display:flex;gap:6px;flex-wrap:wrap}.detail-lamp{display:flex;align-items:center;gap:6px;border:1px solid #dce3e9;border-radius:999px;padding:5px 8px;color:#596876;background:#f8fafc;font-size:10px;font-weight:700}.detail-lamp i{width:9px;height:9px;border-radius:50%;display:block}.detail-lamp .green{background:#18a85b;box-shadow:0 0 6px #18a85b80}.detail-lamp .red{background:#e34850;box-shadow:0 0 6px #e3485080}.detail-lamp .yellow{background:#f2bb32;box-shadow:0 0 6px #f2bb3280}.detail-lamp .black{background:#12171c;border:1px solid #12171c}.detail-ranges{margin:7px 0 9px;color:#6f7e8b;font-size:11px;align-items:center}.detail-ranges .range-label{font-weight:700;margin-right:3px}.detail-ranges button{min-width:38px;border:1px solid #dce3ea;background:#fff;color:#637383;border-radius:7px;padding:6px 8px;font:500 10px ui-monospace,SFMono-Regular,Menlo,monospace}.detail-ranges button.active{background:#17365d;border-color:#17365d;color:#fff}.detailstats{grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border-top:1px solid #e4e9ee;border-bottom:1px solid #e4e9ee;margin:10px 0 12px;padding:10px 0;background:#fff}.detailstat{background:#fff;border:0;border-right:1px solid #e4e9ee;border-radius:0;padding:3px 9px}.detailstat:first-child{padding-left:0}.detailstat:last-child{border-right:0}.detailstat small{color:#748290;font-size:9px;letter-spacing:.08em;margin-bottom:3px}.detailstat b{color:#34424f;font:500 11px ui-monospace,SFMono-Regular,Menlo,monospace;white-space:nowrap}.detailchart{margin:0}.detailchart h3{color:#64727e;font:600 10px ui-monospace,SFMono-Regular,Menlo,monospace;margin:4px 0 0}.detail-chart-wrap{position:relative;height:360px;background:#fff;border-top:1px solid #e4e9ee;border-bottom:1px solid #e4e9ee;overflow:hidden}.detail-chart-wrap canvas{width:100%;height:100%;display:block}.detail-chart-label{position:absolute;left:auto;right:10px;color:#72808d;font:9px ui-monospace,SFMono-Regular,Menlo,monospace;z-index:2;pointer-events:none}.detail-chart-label.price-label{top:6px}.detail-chart-label.volume-label{top:51%}.detail-chart-label.macd-label{top:72%}.detail-tooltip{display:none;position:absolute;z-index:3;pointer-events:none;background:#16202aef;border:1px solid #344656;border-radius:7px;padding:6px 8px;font:10px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;color:#f5f7f9;white-space:nowrap;box-shadow:0 8px 24px #1d354455}.detail-events{gap:0;border-top:1px solid #e4e9ee}.detail-event{background:#fff;border-bottom:1px solid #edf1f4;border-radius:0;padding:8px 3px;color:#35424e}.detail-event time{font:11px ui-monospace,SFMono-Regular,Menlo,monospace;color:#657482}.detail-section-title{display:flex;justify-content:space-between;align-items:center;margin:12px 0 5px}.detail-section-title h3{font-size:11px;color:#52616d;margin:0}.detail-legend{display:flex;gap:12px;flex-wrap:wrap;color:#6f7e8b;font-size:9px;margin:5px 0 8px}.detail-legend span{display:inline-flex;align-items:center;gap:5px}.detail-legend i{width:13px;height:2px;background:#12171c}.detail-legend .redline{background:#e34850}.detail-legend .bluebar{width:8px;height:8px;background:#17365d}.detail-legend .triangle{width:9px;height:8px;background:#18a85b;clip-path:polygon(50% 0,100% 100%,0 100%);position:relative}.detail-legend .triangle:after{content:"";position:absolute;inset:2px 2px 1px;background:#fff;clip-path:polygon(50% 0,100% 100%,0 100%)}.detail-legend .down-triangle{transform:rotate(180deg)}@media(max-width:600px){.detail-overlay{padding:0;align-items:end}.detail-dialog{width:100%;max-height:96vh;border-radius:16px 16px 0 0;padding:13px 14px 12px}.detail-head h2{font-size:17px}.detail-price{font-size:24px}.detail-quote{align-items:flex-start;flex-direction:column}.detail-lamps{gap:5px}.detailstats{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:7px}.detailstat:nth-child(2){border-right:0}.detailstat:nth-child(3){padding-left:0}.detail-chart-wrap{height:320px}.detail-chart-label{font-size:8px}}
     #sharedEditHelp{display:block}
     [hidden]{display:none!important}
+    .title-row { display:flex; align-items:center; gap:10px; }
+    .remark-trigger { padding:3px 10px; min-height:30px; font-size:13px; font-weight:650; color:var(--blue); }
+    .remark-dialog { width:min(400px, calc(100% - 32px)); max-height:85vh; padding:0; border:1px solid var(--line); border-radius:16px; background:var(--panel); color:var(--text); box-shadow:0 20px 64px #0008; }
+    .remark-dialog::backdrop { background:rgba(4, 10, 20, .72); }
+    .remark-content { padding:18px 22px 22px; }
+    .remark-heading { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+    .remark-heading h2 { margin:0; font-size:19px; }
+    .remark-close { width:36px; height:36px; padding:0; font-size:23px; line-height:1; }
+    .remark-links { margin:4px 0 0; }
+    .remark-links div { margin-top:12px; padding-top:12px; border-top:1px solid var(--line); }
+    .remark-links dt { color:var(--muted); font-size:13px; }
+    .remark-links dd { margin:2px 0 0; }
+    .remark-links a { color:var(--blue); text-underline-offset:3px; overflow-wrap:anywhere; }
+    @media (max-width:520px) { .top { flex-wrap:wrap; gap:8px 12px; } .top .actions { margin-left:auto; } .title-row { gap:7px; } }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <header class="top"><div class="brand"><div class="mark">∿</div><div><div class="eyebrow">PORTFOLIO WATCH</div><h1>美股 MACD 持股提醒</h1></div></div><div class="actions"><a id="manageLink" class="button iconbtn" href="/manage/" hidden>管理持股</a><button id="notifyBtn" class="iconbtn" title="開啟通知">♢ <span class="label">開啟通知</span></button><button id="refreshBtn" class="iconbtn" title="同步持股並更新行情" hidden>↻ <span class="label">同步</span></button></div></header>
+    <header class="top">
+      <div class="brand">
+        <div class="mark">∿</div>
+        <div>
+          <div class="eyebrow">PORTFOLIO WATCH</div>
+          <div class="title-row">
+            <h1>美股 MACD 持股提醒</h1>
+            <button id="remarkButton" class="remark-trigger" type="button" aria-haspopup="dialog" aria-controls="remarkDialog">Remark</button>
+          </div>
+        </div>
+      </div>
+      <div class="actions"><a id="manageLink" class="button iconbtn" href="/manage/" hidden>管理持股</a><button id="notifyBtn" class="iconbtn" title="開啟通知">♢ <span class="label">開啟通知</span></button><button id="refreshBtn" class="iconbtn" title="同步持股並更新行情" hidden>↻ <span class="label">同步</span></button></div>
+    </header>
+    <dialog id="remarkDialog" class="remark-dialog" aria-labelledby="remarkTitle">
+      <div class="remark-content">
+        <div class="remark-heading">
+          <h2 id="remarkTitle">備註與連結</h2>
+          <form method="dialog"><button class="remark-close" aria-label="關閉備註" type="submit">×</button></form>
+        </div>
+        <dl class="remark-links">
+          <div><dt>GitHub repo</dt><dd><a href="https://github.com/dennyroland/denny888" target="_blank" rel="noopener noreferrer">dennyroland/denny888</a></dd></div>
+          <div><dt>正式網址</dt><dd><a href="https://denny888.usdollar.win/" target="_blank" rel="noopener noreferrer">denny888.usdollar.win</a></dd></div>
+          <div><dt>日線行情資料</dt><dd>正式站透過 <a href="https://ranaroussi.github.io/yfinance/" target="_blank" rel="noopener noreferrer">yfinance</a> 取得 <a href="https://finance.yahoo.com/" target="_blank" rel="noopener noreferrer">Yahoo Finance</a> 行情。</dd></div>
+        </dl>
+      </div>
+    </dialog>
     <section class="hero"><div><h2>把持股訊號放在一起看</h2><p>追蹤 MACD 零軸翻轉與交叉訊號，價格採日線收盤資料。</p><div class="status"><i class="dot"></i><span id="status">正在載入…</span></div></div><div class="badge">日線 MACD（12, 26, 9）</div></section>
     <div class="grid"><main>
       <section class="panel"><div class="panelhead"><div><h2>美股訊號掃描</h2><span class="sub">每日收盤訊號 · 120 交易日事件 · 爆量門檻 1.5× 近 20 日均量</span></div><button id="marketScanBtn" class="primary">開始掃描</button></div><div class="groupbar"><label class="sub" for="marketGroup">股票區塊</label><select id="marketGroup"><option value="sp500">S&amp;P 500</option><option value="healthcare" selected>醫療保健前 50</option><option value="financial">金融前 10</option><option value="telecom">電信營運商前 10</option><option value="consumer">消費品前 50</option><option value="energy">能源前 20</option></select><span id="scanMeta" class="scanmeta">尚未掃描</span></div><div id="scanFilters" class="scanfilters"></div><div class="tablewrap"><table class="scan-table"><thead><tr><th><button data-sort="symbol" title="股票代碼">TK</button></th><th><button data-sort="close" title="收盤價">$</button></th><th><button data-sort="change_pct" title="漲跌幅">%</button></th><th><button data-sort="golden" title="最近黃金交叉日期">GC</button></th><th><button data-sort="positive" title="最近 MACD 負轉正日期">0↑</button></th><th><button data-sort="negative" title="最近 MACD 正轉負日期">0↓</button></th><th><button data-sort="death" title="最近死亡交叉日期">DC</button></th><th><button data-sort="vol_pct" title="當日成交量相對前 20 日均量的變化百分比">Vol</button></th></tr></thead><tbody id="marketRows"><tr><td colspan="8" class="scan-empty">選擇股票區塊並開始掃描</td></tr></tbody></table></div><div id="scanError" class="error"></div></section>
@@ -41,6 +80,11 @@
     <div class="foot">行情資料由 Yahoo Finance 提供，可能延遲或有缺漏；此工具只提供技術指標提醒。</div>
   </div><div id="toast" class="toast"></div><div id="detailModal" class="detail-overlay" hidden><section class="detail-dialog" role="dialog" aria-modal="true" aria-labelledby="detailTitle"><div class="detail-head"><div><h2 id="detailTitle">個股詳細資料</h2><span id="detailDate" class="sub"></span></div><button id="detailClose" aria-label="關閉個股詳細資料">關閉 ✕</button></div><div id="detailBody"><div class="detail-load">載入個股資料…</div></div></section></div>
   <script>
+    const remarkDialog = document.getElementById('remarkDialog');
+    document.getElementById('remarkButton').addEventListener('click', () => remarkDialog.showModal());
+    remarkDialog.addEventListener('click', event => {
+      if (event.target === remarkDialog) remarkDialog.close();
+    });
     const $=s=>document.querySelector(s), money=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n), pct=n=>(n>=0?'+':'')+n.toFixed(2)+'%';let chartData=[];
     const FILTERS=[['all','全部'],['spike','爆大量'],['positive','負→正'],['golden','金叉'],['negative','正→負'],['death','死叉'],['spike_golden','爆量＋金叉'],['spike_positive','爆量＋負轉正'],['spike_death','爆量＋死叉'],['spike_negative','爆量＋正轉負']];let marketRows=[],marketDate='',marketFilter='all',marketSort='avg_dollar_volume',marketDesc=true;
     function renderFilterButtons(){ $('#scanFilters').innerHTML=FILTERS.map(([key,label])=>`<button data-filter="${key}" class="${key===marketFilter?'active':''}">${label}</button>`).join('') }
