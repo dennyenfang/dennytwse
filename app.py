@@ -19,7 +19,9 @@ from flask import Flask, jsonify, request, send_from_directory
 
 ROOT = Path(__file__).resolve().parent
 load_dotenv(ROOT / ".env")
-DB_PATH = ROOT / "portfolio.db"
+DB_PATH = Path(os.environ.get("DENNY888_DB_PATH") or ROOT / "portfolio.db")
+revision_file = ROOT / ".deploy-revision"
+RELEASE_COMMIT = revision_file.read_text().strip() if revision_file.is_file() else None
 app = Flask(__name__, static_folder="static")
 PRICE_CACHE = {}
 DETAIL_CACHE = {}
@@ -51,6 +53,8 @@ def init_db():
 
 def sync_sheet_holdings(force=False):
     """Import rows from the user's link-shared Google Sheet without deleting app data."""
+    if not SHEET_ID.strip():
+        return {**SHEET_CACHE, "configured": False, "new": 0}
     now = time.monotonic()
     if not force and now - SHEET_CACHE["at"] < 300:
         return dict(SHEET_CACHE)
@@ -105,9 +109,26 @@ def holding_dict(row):
     return {"symbol": row["symbol"], "shares": row["shares"], "cost": row["cost"]}
 
 
+@app.after_request
+def private_response_headers(response):
+    if request.path.startswith("/api/") or request.path == "/healthz":
+        response.headers["Cache-Control"] = "private, no-store"
+    return response
+
+
 @app.get("/")
 def index():
     return send_from_directory(ROOT / "static", "index.html")
+
+
+@app.get("/healthz")
+def health():
+    try:
+        with connect() as db:
+            db.execute("SELECT symbol FROM holdings LIMIT 1").fetchone()
+    except sqlite3.Error:
+        return jsonify(status="unavailable", commit=RELEASE_COMMIT), 503
+    return jsonify(status="ok", commit=RELEASE_COMMIT)
 
 
 @app.get("/manifest.webmanifest")

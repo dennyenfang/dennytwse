@@ -1,0 +1,10 @@
+[Unit]
+Description=Check GitHub for a new denny888 main commit every two minutes
+
+[Timer]
+OnBootSec=45s
+OnUnitInactiveSec=2min
+AccuracySec=10s
+
+[Install]
+WantedBy=timers.target

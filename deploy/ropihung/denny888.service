@@ -1,0 +1,15 @@
+[Unit]
+Description=Denny888 portfolio application
+After=network.target
+
+[Service]
+Environment=DENNY888_PORT=5001
+EnvironmentFile=-%h/.config/denny888/service.env
+UMask=0077
+ExecStart=%h/.local/libexec/denny888/sandbox.sh serve %h/.local/share/denny888/current
+Restart=on-failure
+RestartSec=3s
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target

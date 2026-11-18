@@ -1,0 +1,11 @@
+[Unit]
+Description=Deploy the latest denny888 main commit
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+Environment=DENNY888_PORT=5001
+EnvironmentFile=-%h/.config/denny888/service.env
+ExecStart=%h/.local/libexec/denny888/deploy.sh
+TimeoutStartSec=30min
