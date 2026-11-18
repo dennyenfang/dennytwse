@@ -47,7 +47,9 @@ curl -fsS http://127.0.0.1:5001/healthz
 
 計時器每兩分鐘檢查 `main`。新版本通過獨立資料庫測試後才會切換，實際服務的 `/healthz` 回傳狀態及完整 commit SHA。啟動失敗會回到前一個可用版本。資料庫存於 `~/.local/share/denny888/data/portfolio.db`，更版前的最近五份快照存於 `backups/`。套件安裝、測試與服務分別在 Bubblewrap 裡執行，GitHub 憑證位於沙箱外。若更新部署腳本或 systemd 單元，請審查後在主機重新執行安裝程式。
 
-手動觸發檢查可執行 `systemctl --user start denny888-deploy.service`，查看最近紀錄可執行 `journalctl --user -u denny888-deploy.service -n 50`。
+手動觸發檢查可執行 `systemctl --user start denny888-deploy.service`。在 ropihung 查看最近紀錄可執行 `journalctl _SYSTEMD_USER_UNIT=denny888-deploy.service -n 50 --no-pager`。
+
+Google Sheet ID 和持股資料庫存放在 Pi 上。行情與訊號僅供資訊參考。
 
 ## Cloudflare Workers 部署
 
