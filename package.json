@@ -1,0 +1,9 @@
+{
+  "name": "denny888-codex-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build-site.mjs",
+    "validate": "node scripts/validate-artifact.mjs"
+  }
+}
