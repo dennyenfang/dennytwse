@@ -3,3 +3,4 @@ pandas>=2.0,<4
 yfinance>=0.2.50
 python-dotenv>=1.0,<2
 gunicorn>=23,<28
+PyJWT[crypto]>=2.10.1,<3

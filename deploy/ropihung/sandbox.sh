@@ -61,9 +61,19 @@ with open("/tmp/snapshot.db", "rb") as snapshot:
         ;;
     serve)
         box+=(--bind "$store/data" /data --setenv DENNY888_DB_PATH /data/portfolio.db
+              --setenv DENNY888_PUBLIC_SHARED 1
+              --setenv DENNY888_ACCESS_TEAM_URL "${DENNY888_ACCESS_TEAM_URL:-}"
+              --setenv DENNY888_ACCESS_AUD "${DENNY888_ACCESS_AUD:-}"
+              --setenv DENNY888_EDITOR_EMAILS "${DENNY888_EDITOR_EMAILS:-}"
+              --setenv DENNY888_PUBLIC_ORIGIN "${DENNY888_PUBLIC_ORIGIN:-}"
               --setenv XDG_CACHE_HOME /data/cache --setenv SHEET_ID "${SHEET_ID:-}" --setenv SHEET_GID "${SHEET_GID:-0}")
         exec "${box[@]}" /bin/sh -ec '
-            /venv/bin/python -c "from app import init_db; init_db()"
+            /venv/bin/python -c "
+from app import app, init_db
+mode = app.test_client().get(\"/api/site-mode\")
+if mode.status_code != 200 or mode.get_json(silent=True) != {\"publicShared\": True, \"canEdit\": False}:
+    raise RuntimeError(\"Refusing to expose a release without public read-only mode\")
+init_db()"
             exec /venv/bin/python -m gunicorn --bind "127.0.0.1:$1" --workers 1 --threads 4 --timeout 300 --access-logfile - app:app
         ' sh "$port"
         ;;

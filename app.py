@@ -7,15 +7,19 @@ import io
 import urllib.request
 import json
 import os
+import re
+from contextlib import closing, contextmanager
+from functools import lru_cache
 from datetime import timedelta
 from datetime import datetime, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+import jwt
 import pandas as pd
 import yfinance as yf
 from dotenv import load_dotenv
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, g, has_request_context, jsonify, request, send_from_directory
 
 ROOT = Path(__file__).resolve().parent
 load_dotenv(ROOT / ".env")
@@ -28,12 +32,69 @@ DETAIL_CACHE = {}
 SHEET_ID = os.environ.get("SHEET_ID", "")
 SHEET_GID = os.environ.get("SHEET_GID", "0")
 SHEET_CACHE = {"at": 0.0, "count": 0, "error": None}
+PUBLIC_SHARED = os.environ.get("DENNY888_PUBLIC_SHARED", "0").strip().lower() not in {"", "0", "false", "off"}
+ACCESS_TEAM = os.environ.get("DENNY888_ACCESS_TEAM_URL", "").rstrip("/")
+ACCESS_AUD = os.environ.get("DENNY888_ACCESS_AUD", "")
+EDITOR_EMAILS = {email.strip().casefold() for email in os.environ.get("DENNY888_EDITOR_EMAILS", "").split(",") if email.strip()}
+PUBLIC_ORIGIN = os.environ.get("DENNY888_PUBLIC_ORIGIN", "").rstrip("/")
 
 
+@lru_cache(maxsize=1)
+def access_keys(team):
+    return jwt.PyJWKClient(f"{team}/cdn-cgi/access/certs", timeout=5)
+
+
+def verified_editor():
+    token = request.headers.get("Cf-Access-Jwt-Assertion")
+    if not token or not ACCESS_AUD or not 1 <= len(EDITOR_EMAILS) <= 2:
+        return False
+    if not re.fullmatch(r"https://[a-z0-9-]+\.cloudflareaccess\.com", ACCESS_TEAM):
+        return False
+    try:
+        key = access_keys(ACCESS_TEAM).get_signing_key_from_jwt(token)
+        claims = jwt.decode(token, key.key, algorithms=["RS256"], issuer=ACCESS_TEAM, audience=ACCESS_AUD,
+                            options={"require": ["exp", "iat", "nbf", "sub", "email", "type"]})
+    except (jwt.PyJWTError, ValueError, TypeError, OSError):
+        return False
+    email = claims["email"]
+    return claims["type"] == "app" and bool(claims["sub"]) and isinstance(email, str) and email.casefold() in EDITOR_EMAILS
+
+
+@app.before_request
+def protect_shared_portfolio():
+    if not PUBLIC_SHARED:
+        return
+    managing = request.path == "/manage" or request.path.startswith("/manage/")
+    if managing:
+        if not verified_editor():
+            return jsonify(error="此頁面僅供授權管理員使用。"), 403
+        g.editor = True
+    if request.method not in {"GET", "HEAD", "OPTIONS"}:
+        if managing:
+            if not PUBLIC_ORIGIN.startswith("https://") or request.headers.get("Origin") != PUBLIC_ORIGIN:
+                return jsonify(error="請從本站管理頁面送出變更。"), 403
+            g.write_allowed = True
+        elif request.path != "/api/scan" or request.method != "POST":
+            return jsonify(error="此投資組合僅供公開查閱。"), 403
+
+
+def read_only_request():
+    return PUBLIC_SHARED and has_request_context() and not g.get("write_allowed", False)
+
+
+def market_error(exc):
+    return "暫時無法取得此查詢的行情資料。" if read_only_request() else str(exc)
+
+
+@contextmanager
 def connect():
-    db = sqlite3.connect(DB_PATH)
+    if read_only_request():
+        db = sqlite3.connect(DB_PATH.resolve().as_uri() + "?mode=ro", uri=True)
+    else:
+        db = sqlite3.connect(DB_PATH)
     db.row_factory = sqlite3.Row
-    return db
+    with closing(db), db:
+        yield db
 
 
 def init_db():
@@ -111,14 +172,25 @@ def holding_dict(row):
 
 @app.after_request
 def private_response_headers(response):
-    if request.path.startswith("/api/") or request.path == "/healthz":
+    if request.path.startswith(("/api/", "/manage")) or request.path == "/healthz":
         response.headers["Cache-Control"] = "private, no-store"
+    if request.path.startswith("/manage"):
+        response.headers["Content-Security-Policy"] = "frame-ancestors 'none'"
+        response.headers["X-Frame-Options"] = "DENY"
     return response
 
 
 @app.get("/")
+@app.get("/manage/", strict_slashes=False)
 def index():
     return send_from_directory(ROOT / "static", "index.html")
+
+
+@app.get("/api/site-mode")
+@app.get("/manage/api/site-mode")
+def site_mode():
+    can_edit = not PUBLIC_SHARED or g.get("editor", False) or verified_editor()
+    return jsonify(publicShared=PUBLIC_SHARED, canEdit=can_edit)
 
 
 @app.get("/healthz")
@@ -150,13 +222,15 @@ def service_worker():
 
 @app.get("/api/holdings")
 def list_holdings():
-    sync_sheet_holdings()
+    if not read_only_request():
+        sync_sheet_holdings()
     with connect() as db:
         rows = db.execute("SELECT * FROM holdings ORDER BY symbol").fetchall()
     return jsonify([holding_dict(row) for row in rows])
 
 
 @app.post("/api/holdings")
+@app.post("/manage/api/holdings")
 def save_holding():
     try:
         data = request.get_json(force=True)
@@ -172,6 +246,7 @@ def save_holding():
 
 
 @app.delete("/api/holdings/<symbol>")
+@app.delete("/manage/api/holdings/<symbol>")
 def delete_holding(symbol):
     try:
         symbol = valid_symbol(symbol)
@@ -264,8 +339,9 @@ def market_symbols(group):
             symbols = [x.get("symbol", "") for x in quotes if x.get("symbol")][:limit]
     if not symbols:
         raise ValueError(f"{label}名單目前無法取得。")
-    with connect() as db:
-        db.execute("INSERT INTO universe_cache(group_name,symbols,updated_at) VALUES(?,?,?) ON CONFLICT(group_name) DO UPDATE SET symbols=excluded.symbols,updated_at=excluded.updated_at", (group, json.dumps(symbols), datetime.now(timezone.utc).isoformat()))
+    if not read_only_request():
+        with connect() as db:
+            db.execute("INSERT INTO universe_cache(group_name,symbols,updated_at) VALUES(?,?,?) ON CONFLICT(group_name) DO UPDATE SET symbols=excluded.symbols,updated_at=excluded.updated_at", (group, json.dumps(symbols), datetime.now(timezone.utc).isoformat()))
     return symbols
 
 
@@ -330,24 +406,28 @@ def market_scan():
                     "volume": current_vol, "vol_pct": vol_pct, "avg_dollar_volume": avg_dollar_volume, "spike": vol_pct >= 50,
                     "macd": float(macd.iloc[-1]), "signal": float(signal.iloc[-1]), "date": last_day.date().isoformat()})
                 # Persist downloaded daily bars so the Pi can reuse its local history cache.
-                with connect() as db:
-                    db.executemany("INSERT OR REPLACE INTO market_bars(symbol,day,close,volume) VALUES(?,?,?,?)", [(symbol, ix.date().isoformat(), float(close.loc[ix]), float(volume.get(ix, 0) or 0)) for ix in close.tail(120).index])
+                if not read_only_request():
+                    with connect() as db:
+                        db.executemany("INSERT OR REPLACE INTO market_bars(symbol,day,close,volume) VALUES(?,?,?,?)", [(symbol, ix.date().isoformat(), float(close.loc[ix]), float(volume.get(ix, 0) or 0)) for ix in close.tail(120).index])
             except Exception:
                 continue
         if not rows:
             raise ValueError("目前沒有可用的完整日線行情，請稍後重試。")
         payload = {"group": group, "group_label": MARKET_GROUPS[group][0], "as_of": max((r["date"] for r in rows), default=""), "rows": rows, "count": len(rows), "volume_threshold": 1.5}
-        if payload["as_of"]:
+        if payload["as_of"] and not read_only_request():
             with connect() as db:
                 db.execute("INSERT OR REPLACE INTO market_scan_results(group_name,as_of,payload) VALUES(?,?,?)", (group, payload["as_of"], json.dumps(payload)))
         return jsonify(payload)
     except Exception as exc:
-        return jsonify({"error": str(exc)}), 503
+        return jsonify({"error": market_error(exc)}), 503
 
 
 @app.post("/api/scan")
+@app.post("/manage/api/scan")
 def scan():
-    sync_sheet_holdings()
+    read_only = read_only_request()
+    if not read_only:
+        sync_sheet_holdings()
     with connect() as db:
         holdings = db.execute("SELECT * FROM holdings ORDER BY symbol").fetchall()
     problems, new_alerts = [], []
@@ -368,12 +448,14 @@ def scan():
             if previous.macd >= previous.signal and current.macd < current.signal:
                 events.append(("death_cross", "MACD 死亡交叉"))
             for kind, label in events:
-                with connect() as db:
-                    cursor = db.execute("INSERT OR IGNORE INTO alerts(symbol,kind,signal_date,macd,signal,created_at) VALUES(?,?,?,?,?,?)", (symbol, kind, signal_date, float(current.macd), float(current.signal), datetime.now(timezone.utc).isoformat()))
-                    if cursor.rowcount:
-                        new_alerts.append({"symbol": symbol, "kind": kind, "label": label, "date": signal_date, "macd": round(float(current.macd), 4), "signal": round(float(current.signal), 4)})
+                if not read_only:
+                    with connect() as db:
+                        cursor = db.execute("INSERT OR IGNORE INTO alerts(symbol,kind,signal_date,macd,signal,created_at) VALUES(?,?,?,?,?,?)", (symbol, kind, signal_date, float(current.macd), float(current.signal), datetime.now(timezone.utc).isoformat()))
+                    if not cursor.rowcount:
+                        continue
+                new_alerts.append({"symbol": symbol, "kind": kind, "label": label, "date": signal_date, "macd": round(float(current.macd), 4), "signal": round(float(current.signal), 4)})
         except Exception as exc:
-            problems.append({"symbol": symbol, "error": str(exc)})
+            problems.append({"symbol": symbol, "error": market_error(exc)})
     return jsonify({"alerts": new_alerts, "errors": problems})
 
 
@@ -387,7 +469,8 @@ def list_alerts():
 
 @app.get("/api/quotes")
 def quotes():
-    sheet = sync_sheet_holdings()
+    read_only = read_only_request()
+    sheet = {} if read_only else sync_sheet_holdings()
     with connect() as db:
         holdings = db.execute("SELECT * FROM holdings ORDER BY symbol").fetchall()
     results, errors = [], []
@@ -397,17 +480,18 @@ def quotes():
             latest = values.iloc[-1]
             shares, cost = float(holding["shares"]), float(holding["cost"])
             price = float(latest.close)
-            if holding["source"] == "sheet" and cost <= 0:
+            if not read_only and holding["source"] == "sheet" and cost <= 0:
                 cost = price
                 with connect() as db:
                     db.execute("UPDATE holdings SET cost=? WHERE symbol=? AND source='sheet' AND cost<=0", (cost, holding["symbol"]))
             results.append({"symbol": holding["symbol"], "shares": shares, "cost": cost, "price": price, "value": price * shares if shares else None, "pnl": (price - cost) * shares if shares and cost else None, "pnl_pct": ((price / cost) - 1) * 100 if cost else None, "macd": float(latest.macd), "signal": float(latest.signal), "histogram": float(latest.macd - latest.signal), "date": values.index[-1].date().isoformat()})
         except Exception as exc:
-            errors.append({"symbol": holding["symbol"], "error": str(exc)})
+            errors.append({"symbol": holding["symbol"], "error": market_error(exc)})
     return jsonify({"quotes": results, "errors": errors, "sheet": sheet, "holding_count": len(holdings)})
 
 
 @app.post("/api/sync-sheet")
+@app.post("/manage/api/sync-sheet")
 def sync_sheet_route():
     return jsonify(sync_sheet_holdings(force=True))
 
@@ -423,7 +507,7 @@ def macd_history(symbol):
             "histogram": float(row.macd - row.signal)
         } for idx, row in values.iterrows()]})
     except Exception as exc:
-        return jsonify({"error": str(exc)}), 400
+        return jsonify({"error": market_error(exc)}), 400
 
 
 @app.get("/api/stock-detail/<symbol>")
@@ -466,7 +550,7 @@ def stock_detail(symbol):
         DETAIL_CACHE[symbol] = (time.monotonic(), result)
         return jsonify(result)
     except Exception as exc:
-        return jsonify({"error": str(exc)}), 400
+        return jsonify({"error": market_error(exc)}), 400
 
 
 if __name__ == "__main__":
