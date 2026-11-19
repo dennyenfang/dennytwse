@@ -57,7 +57,7 @@ curl -fsS http://127.0.0.1:5001/healthz
 
 手動觸發檢查可執行 `systemctl --user start denny888-deploy.service`。在 ropihung 查看最近紀錄可執行 `journalctl _SYSTEMD_USER_UNIT=denny888-deploy.service -n 50 --no-pager`。
 
-`denny888-market-scan.timer` 依紐約證交所日曆，在交易日正式收盤後 10 分鐘啟動掃描，一般為美東 16:10，13:00 提早收盤時為 13:10。主機恢復後會檢查最近到期的交易日。手動檢查可用 `systemctl --user start denny888-market-scan.service`，實際發布結果可查 `/api/market-scan/latest`。選擇特定歷史日期與分類的例子為 `/api/market-scan?as_of=2026-11-18&group=sheet`。
+`denny888-market-scan.timer` 依紐約證交所日曆，交易日收盤後 20 分鐘進行初掃，60 分鐘進行收盤複核；一般為美東 16:20、17:00，13:00 提早收盤時為 13:20、14:00。複核會重新抓取名單行情；若 Yahoo 回傳的歷史資料較短，只有在重疊日期及收盤價吻合時才以快取的舊資料補齊歷史區段。主機恢復後會檢查最近到期的階段。手動檢查可用 `systemctl --user start denny888-market-scan.service`，實際發布結果可查 `/api/market-scan/latest`。選擇特定歷史日期與分類的例子為 `/api/market-scan?as_of=2026-11-18&group=sheet`。
 
 持股匯入表的設定和正式 SQLite 資料庫存放在 Pi 上。行情與訊號僅供資訊參考。
 

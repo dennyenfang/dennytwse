@@ -213,7 +213,7 @@
       return Boolean(row[key]);
     }
 
-    function marketRow(row) {
+    function marketRow(row, awaitingConfirmation = false) {
       const tr = document.createElement('tr');
       const ticker = document.createElement('button');
       ticker.type = 'button';
@@ -221,7 +221,14 @@
       ticker.dataset.detail = row.symbol;
       ticker.textContent = row.symbol;
       ticker.setAttribute('aria-label', `查看 ${row.symbol} 詳細資料`);
-      tr.insertCell().append(ticker);
+      const symbolCell = tr.insertCell();
+      symbolCell.append(ticker);
+      if (awaitingConfirmation) {
+        const note = document.createElement('small');
+        note.className = 'sub';
+        note.textContent = ' 待複核';
+        symbolCell.append(note);
+      }
       const spikeDate = row.spike_dates?.at(-1) || '';
       const fields = [
         [money(row.close), ''], [pct(row.change_pct), row.change_pct >= 0 ? 'positive' : 'negative'],
@@ -290,9 +297,17 @@
           ? first - second : String(first).localeCompare(String(second));
         return (marketDesc ? -order : order) || a.symbol.localeCompare(b.symbol);
       });
-      marketBody.replaceChildren(...rows.map(marketRow));
+      const confirming = snapshot.phase === 'confirmation';
+      const pending = new Set(snapshot.confirmation_pending || []);
+      marketBody.replaceChildren(...rows.map(row => marketRow(row, confirming && pending.has(row.symbol))));
       const targets = coverage?.target_count;
       const meta = [`交易日 ${snapshot.as_of}`, `有行情 ${groupRows.length} / ${targets ?? '—'} 檔`];
+      if (confirming) {
+        const confirmed = groupRows.filter(row => !pending.has(row.symbol)).length;
+        meta.push(`收盤複核 ${confirmed} / ${targets ?? '—'} 檔`);
+      } else if (snapshot.phase === 'preliminary') {
+        meta.push('初掃');
+      }
       if (marketFilter !== 'all') meta.push(`符合 ${rows.length} 檔`);
       const published = Date.parse(snapshot.published_at);
       if (Number.isFinite(published)) meta.push(`${publishTime.format(published)} 發布（台北時間）`);
@@ -313,8 +328,9 @@
     function attemptNotice(attempt) {
       if (!attempt || (snapshot && attempt.as_of < snapshot.as_of)) return '';
       const day = attempt.as_of || '';
-      if (attempt.status === 'failed') return `${day} 掃描失敗。${snapshot ? '目前顯示最近一次發布的結果。' : ''}`;
-      if (attempt.status === 'running') return `${day} 掃描進行中。${snapshot ? '完成後會發布新結果。' : ''}`;
+      const phase = attempt.phase === 'confirmation' ? '複核' : '初掃';
+      if (attempt.status === 'failed') return `${day} ${phase}未取得足夠行情。${snapshot ? '目前顯示最近一次發布的結果。' : ''}`;
+      if (attempt.status === 'running') return `${day} ${phase}進行中。${snapshot ? '完成後會發布新結果。' : ''}`;
       return '';
     }
 

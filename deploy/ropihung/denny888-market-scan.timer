@@ -1,10 +1,9 @@
 [Unit]
-Description=Check for a US market scan at ten and forty minutes past the hour
+Description=Check for preliminary and confirmation US market scans
 
 [Timer]
-# The exchange calendar selects the session. Both 13:10 ET early closes and
-# 16:10 ET regular closes fire here. Later ticks retry failed or missed scans.
-OnCalendar=*-*-* *:10,40:00 America/New_York
+# Regular sessions run at 16:20 and 17:00 ET; half days at 13:20 and 14:00 ET.
+OnCalendar=*-*-* *:00,20:00 America/New_York
 OnStartupSec=1min
 Persistent=true
 AccuracySec=1s
