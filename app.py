@@ -16,6 +16,7 @@ from pathlib import Path
 
 import jwt
 import market_scan_store
+import market_universe
 import twse_data
 from scheduled_market_scan import latest_due_session
 import pandas as pd
@@ -431,6 +432,19 @@ def market_scan():
     except sqlite3.Error:
         return jsonify(status="unavailable", error="暫時無法讀取已儲存的行情掃描。"), 503
     return jsonify(payload), 200 if payload["status"] == "complete" else 503
+
+
+@app.get("/api/stock-names")
+def stock_names():
+    symbols = []
+    try:
+        for raw in request.args.get("symbols", "").split(","):
+            if raw.strip():
+                symbols.append(valid_symbol(raw))
+        symbols = list(dict.fromkeys(symbols))[:300]
+        return jsonify(market_universe.security_names(symbols))
+    except (ValueError, OSError) as exc:
+        return jsonify(error=market_error(exc)), 400
 
 
 @app.post("/api/scan")

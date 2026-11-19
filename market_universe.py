@@ -14,6 +14,7 @@ SHEET_ID = os.environ.get("WATCHLIST_SHEET_ID", "1miH6Rv7AS0xI8bxM-9X-kHTErM3SuP
 SHEET_GID = os.environ.get("WATCHLIST_SHEET_GID", "0")
 TWSE_DAILY = "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL"
 TPEX_DAILY = "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes"
+_NAME_CACHE = {"at": 0.0, "values": {}}
 
 
 def fetch_json(url):
@@ -41,6 +42,21 @@ def _field(row, *names):
         if value is not None:
             return str(value).strip()
     return ""
+
+
+def security_names(symbols):
+    """Return official issuer names for requested TWSE/TPEx symbols, cached for one hour."""
+    import time
+    if time.monotonic() - _NAME_CACHE["at"] >= 3600 or not _NAME_CACHE["values"]:
+        values = {}
+        for rows in (fetch_json(TWSE_DAILY), fetch_json(TPEX_DAILY)):
+            for row in rows:
+                code = _field(row, "Code", "SecuritiesCompanyCode", "證券代號", "股票代號")
+                name = _field(row, "Name", "CompanyName", "SecuritiesCompanyName", "公司名稱", "證券名稱", "名稱")
+                if code and name:
+                    values[code] = name
+        _NAME_CACHE.update(at=time.monotonic(), values=values)
+    return {symbol: _NAME_CACHE["values"].get(symbol, "") for symbol in symbols}
 
 
 def _codes(rows):
