@@ -159,7 +159,7 @@
               <th><button data-sort="positive" title="近 3 個交易日內的 MACD 負轉正日期，無訊號留白">0↑</button></th>
               <th><button data-sort="negative" title="近 3 個交易日內的 MACD 正轉負日期，無訊號留白">0↓</button></th>
               <th><button data-sort="death" title="近 3 個交易日內的死亡交叉日期，無訊號留白">DC</button></th>
-              <th><button data-sort="vol_pct" title="近 3 日成交量相對此前 30 日均量的最大變化百分比">Vol</button></th>
+              <th><button data-sort="spike_date" title="僅顯示近 3 日有爆量日期的股票，依最近爆量日期排序">Vol</button></th>
             </tr></thead>
             <tbody id="marketRows"></tbody>
           </table>
@@ -254,6 +254,15 @@
       panel.querySelector('ul').replaceChildren(...items);
     }
 
+    const DATE_SORT_KEYS = new Set(['golden','positive','negative','death','spike_date']);
+    function rowSortValue(row, key) {
+      if (key === 'spike_date') {
+        const dates = row.spike_dates || [];
+        return dates.at(-1) || '';
+      }
+      return row[key] ?? '';
+    }
+
     function drawMarketRows() {
       if (!snapshot) return;
       const group = $('#marketGroup').value;
@@ -261,16 +270,21 @@
       const groupRows = all ? snapshot.rows : snapshot.rows.filter(row => row.groups.includes(group));
       const coverage = all ? snapshot : snapshot.groups[group];
       showMissingTargets(group);
-      const rows = groupRows.filter(row => matchesFilter(row, marketFilter));
+      const matchingRows = groupRows.filter(row => matchesFilter(row, marketFilter));
+      const rows = matchingRows.filter(row => {
+        if (!DATE_SORT_KEYS.has(marketSort)) return true;
+        if (marketSort === 'spike_date') return rowSortValue(row, marketSort) !== '';
+        return Boolean(row[marketSort]);
+      });
       for (const button of filterBar.children) {
         const key = button.dataset.filter;
         const count = key === marketFilter ? rows.length : groupRows.filter(row => matchesFilter(row, key)).length;
         button.querySelector('.filter-count').textContent = `${count} 檔`;
       }
       rows.sort((a, b) => {
-        const first = a[marketSort], second = b[marketSort];
+        const first = rowSortValue(a, marketSort), second = rowSortValue(b, marketSort);
         const order = typeof first === 'number' && typeof second === 'number'
-          ? first - second : String(first || '').localeCompare(String(second || ''));
+          ? first - second : String(first).localeCompare(String(second));
         return (marketDesc ? -order : order) || a.symbol.localeCompare(b.symbol);
       });
       marketBody.replaceChildren(...rows.map(marketRow));
@@ -283,7 +297,8 @@
       const noMatches = !rows.length && groupRows.length > 0;
       scanEmpty.classList.toggle('scan-no-match', noMatches);
       scanEmpty.hidden = rows.length > 0;
-      if (noMatches) scanEmpty.textContent = '此篩選目前沒有符合的股票';
+      if (noMatches) scanEmpty.textContent = DATE_SORT_KEYS.has(marketSort) && matchingRows.length
+        ? '此欄位目前沒有符合的日期訊號' : '此篩選目前沒有符合的股票';
       else if (!rows.length) scanEmpty.textContent = targets === 0 ? '此區塊沒有掃描標的。' : '此區塊在本次掃描沒有可用行情。';
       for (const button of $('#market-scan').querySelectorAll('[data-sort]')) {
         const header = button.closest('th');
@@ -389,7 +404,7 @@
     $('#market-scan thead').addEventListener('click', event => {
       const key = event.target.closest('[data-sort]')?.dataset.sort;
       if (!key) return;
-      marketDesc = key === marketSort ? !marketDesc : ['avg_dollar_volume','vol_pct'].includes(key);
+      marketDesc = key === marketSort ? !marketDesc : false;
       marketSort = key;
       drawMarketRows();
     });
