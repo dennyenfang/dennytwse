@@ -99,14 +99,14 @@ class MarketScanTest(unittest.TestCase):
         self.assertTrue(all("2026-11-17" in item["reason"] for item in sector["missing"]))
         self.assertEqual(read_scan(self.path, "sp500")["missing_count"], 0)
 
-    def test_first_of_120_signal_dates_uses_preceding_bar(self):
+    def test_signal_older_than_three_sessions_is_not_reported(self):
         dates = pd.bdate_range(end=self.day, periods=200)
         frame = pd.DataFrame({"Close": np.r_[np.full(80, 100.0), 100.0 + np.arange(1, 121)],
                               "Volume": 1000}, index=dates)
         self.run_day(downloader=lambda symbols, **opts: pd.concat({s: frame for s in symbols}, axis=1))
         row = read_scan(self.path)["rows"][0]
-        self.assertEqual(row["golden"], dates[80].date().isoformat())
-        self.assertEqual(row["positive"], dates[80].date().isoformat())
+        self.assertEqual(row["golden"], "")
+        self.assertEqual(row["positive"], "")
 
     def test_scheduled_retry_budget_starts_after_first_publication(self):
         self.assertTrue(needs_scheduled_scan(self.path, self.day))

@@ -17,7 +17,7 @@ GROUP_LABELS = {
     "telecom": "電信營運商", "consumer": "消費品", "energy": "能源", "sheet": "USTICK",
 }
 PRICE_WINDOW = 200
-EVENT_WINDOW = 120
+EVENT_WINDOW = 3
 
 
 class ScanUnavailable(RuntimeError):
