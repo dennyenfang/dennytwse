@@ -186,8 +186,8 @@ def sync_sheet_holdings(force=False):
 
 def valid_symbol(value):
     symbol = str(value or "").strip().upper()
-    if not re.fullmatch(r"\d{4,6}", symbol):
-        raise ValueError("台股代號需為 4 至 6 位數字，例如 2330。")
+    if not re.fullmatch(r"(?:\d{4}|00\d{2,4}[A-Z]?)", symbol):
+        raise ValueError("請輸入有效台股代號，例如 2330 或 0050。")
     return symbol
 
 

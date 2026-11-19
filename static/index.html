@@ -831,7 +831,7 @@
       event.preventDefault();
       const form=event.currentTarget, button=form.querySelector('button'), symbol=$('#personalSymbol').value.trim().toUpperCase();
       try {
-        if(!/^\d{4,6}$/.test(symbol))throw new Error('台股代號需為 4 至 6 位數字，例如 2330。');
+        if(!/^(?:\d{4}|00\d{2,4}[A-Z]?)$/.test(symbol))throw new Error('請輸入有效台股代號，例如 2330 或 0050。');
         const existing=localWatchlist(); if(existing.includes(symbol)){toast(`${symbol} 已在清單中`);return}
         button.disabled=true; button.textContent='儲存中…';
         await api('/api/my-holdings',{method:'POST',body:JSON.stringify({symbol})});

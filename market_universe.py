@@ -29,7 +29,7 @@ def fetch_sheet_column_c():
         if len(row) < 3:
             continue
         symbol = row[2].strip().upper().replace(".0", "")
-        if re.fullmatch(r"\d{4,6}", symbol):
+        if re.fullmatch(r"(?:\d{4}|00\d{2,4}[A-Z]?)", symbol):
             symbols.append(symbol)
     return list(dict.fromkeys(symbols))
 
@@ -47,7 +47,7 @@ def _codes(rows):
     codes = []
     for row in rows:
         code = _field(row, "Code", "SecuritiesCompanyCode", "證券代號", "股票代號")
-        if not re.fullmatch(r"\d{4,6}", code):
+        if not re.fullmatch(r"(?:\d{4}|00\d{2,4}[A-Z]?)", code):
             continue
         # Taiwan ETF codes generally begin with 00; keep them in a separate block.
         codes.append(code)

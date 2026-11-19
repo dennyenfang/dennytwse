@@ -77,13 +77,13 @@ def _bulk_rows(payload, *, tpex=False):
     for row in rows:
         try:
             code = str(row[code_i]).strip()
-            if not re.fullmatch(r"\d{4,6}", code):
+            if not re.fullmatch(r"(?:\d{4}|00\d{2,4}[A-Z]?)", code):
                 continue
             vals = [_number(row[i]) for i in (open_i, high_i, low_i, close_i, volume_i)]
             if any(value is None for value in vals):
                 continue
             opening, high, low, close, volume = vals
-            if tpex or "仟股" in normalized[volume_i]:
+            if "仟股" in normalized[volume_i]:
                 volume *= 1000
             output.append((code, opening, high, low, close, volume))
         except (IndexError, TypeError, ValueError):
@@ -101,7 +101,7 @@ def _daily_market(day, *, tpex=False):
     return _bulk_rows(payload)
 
 
-def _frame(rows, *, tpex=False):
+def _frame(rows, *, volume_in_thousands=False):
     output = []
     for row in rows:
         if len(row) < 7:
@@ -116,8 +116,7 @@ def _frame(rows, *, tpex=False):
             continue
         if None in (volume, opening, high, low, close):
             continue
-        # TPEx reports volume in thousand shares; TWSE reports shares.
-        if tpex:
+        if volume_in_thousands:
             volume *= 1000
         output.append((pd.Timestamp(day), opening, high, low, close, volume))
     if not output:
@@ -129,9 +128,9 @@ def _frame(rows, *, tpex=False):
 def history(symbol, *, period="1y", start=None, end=None, lookback_months=14, **_ignored):
     """Return standard OHLCV bars, preferring TWSE and falling back to TPEx."""
     symbol = str(symbol).strip().upper()
-    if not re.fullmatch(r"\d{4,6}", symbol):
+    if not re.fullmatch(r"(?:\d{4}|00\d{2,4}[A-Z]?)", symbol):
         raise ValueError("台股代號需為 4 至 6 位數字，例如 2330。")
-    twse_rows, tpex_rows = [], []
+    twse_rows, tpex_rows, tpex_fields = [], [], []
     # Each official historical interface returns one calendar month per request.
     for month in _month_starts(lookback_months):
         stamp = month.strftime("%Y%m%d")
@@ -148,10 +147,12 @@ def history(symbol, *, period="1y", start=None, end=None, lookback_months=14, **
                 response = _get_json(f"{TPEX_MONTH}?{tpqs}")
                 if str(response.get("stat", "")).casefold() == "ok":
                     _fields, data = _rows(response)
+                    tpex_fields = _fields or tpex_fields
                     tpex_rows.extend(data)
             except (OSError, ValueError, json.JSONDecodeError):
                 pass
-    frame = _frame(twse_rows) if twse_rows else _frame(tpex_rows, tpex=True)
+    volume_in_thousands = any("仟股" in str(field) for field in tpex_fields)
+    frame = _frame(twse_rows) if twse_rows else _frame(tpex_rows, volume_in_thousands=volume_in_thousands)
     if start:
         frame = frame.loc[frame.index >= pd.Timestamp(start)]
     if end:
