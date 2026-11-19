@@ -9,13 +9,11 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import yfinance as yf
+import twse_data
 
 
 GROUP_LABELS = {
-    "sp500": "S&P 500", "healthcare": "醫療保健", "financial": "金融",
-    "telecom": "電信營運商", "consumer": "消費品", "energy": "能源",
-    "sheet": "觀察清單", "etf": "ETF清單",
+    "listed": "上市", "otc": "上櫃", "etf": "ETF", "sheet": "觀察清單",
 }
 PRICE_WINDOW = 200
 EVENT_WINDOW = 3
@@ -289,10 +287,10 @@ def _download_results(symbols, session, download, *, db_path, published_rows):
     return rows, bars, missing
 
 def _coverage_failure(groups, rows):
-    benchmark = groups["sp500"]
+    benchmark = list(dict.fromkeys(groups["listed"] + groups["otc"]))
     available = sum(symbol in rows for symbol in benchmark)
-    if available < math.ceil(0.90 * len(benchmark)):
-        return f"當日行情覆蓋不足：S&P 500 {available}/{len(benchmark)}"
+    if benchmark and available < math.ceil(0.90 * len(benchmark)):
+        return f"當日行情覆蓋不足：上市＋上櫃 {available}/{len(benchmark)}"
     return None
 
 
@@ -311,7 +309,7 @@ def run_scan(db_path, session_date, *, phase="preliminary", load_universe=None, 
             if "locked" not in str(exc).lower():
                 raise
             raise ScanUnavailable("已有掃描正在執行。") from exc
-        return _run_locked(db_path, session_date, phase, load_universe, download or yf.download)
+        return _run_locked(db_path, session_date, phase, load_universe, download or twse_data.download)
 
 def _run_locked(db_path, session, phase, loader, download):
     day = session.isoformat()

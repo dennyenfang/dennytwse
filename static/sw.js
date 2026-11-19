@@ -1,4 +1,4 @@
-const CACHE = 'macd-pwa-v7';
+const CACHE = 'macd-pwa-twse-v1';
 const ASSETS = new Map([
   ['/manifest.webmanifest', 'application/manifest+json'],
   ['/icon.svg', 'image/svg+xml'],

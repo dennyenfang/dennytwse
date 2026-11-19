@@ -1,102 +1,69 @@
-"""Stock lists used by the closing scan, independent of the editable portfolio."""
+"""Taiwan-market symbols and the C-column watchlist import."""
 
 import csv
-import html
 import io
-import logging
+import os
 import re
+import urllib.parse
 import urllib.request
 
-import yfinance as yf
+
+SHEET_ID = os.environ.get("WATCHLIST_SHEET_ID", "1miH6Rv7AS0xI8bxM-9X-kHTErM3SuPmx-55xh4-nj28")
+SHEET_GID = os.environ.get("WATCHLIST_SHEET_GID", "0")
+TWSE_DAILY = "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_ALL"
+TPEX_DAILY = "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes"
 
 
-MARKET_LISTS_CSV = "https://docs.google.com/spreadsheets/d/1miH6Rv7AS0xI8bxM-9X-kHTErM3SuPmx-55xh4-nj28/export?format=csv&gid=0"
-SP500_PAGE = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
-SP500_MIRROR = "https://raw.githubusercontent.com/datasets/s-and-p-500-companies/main/data/constituents.csv"
+def fetch_json(url):
+    request = urllib.request.Request(url, headers={"User-Agent": "DennyTWSE/1.0"})
+    with urllib.request.urlopen(request, timeout=30) as response:
+        import json
+        return json.load(response)
 
 
-def fetch_text(url):
-    request = urllib.request.Request(url, headers={"User-Agent": "Denny888/1.0 (+https://denny888.usdollar.win)"})
+def fetch_sheet_column_c():
+    url = (f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?"
+           f"{urllib.parse.urlencode({'format': 'csv', 'gid': SHEET_GID})}")
+    request = urllib.request.Request(url, headers={"User-Agent": "DennyTWSE/1.0"})
     with urllib.request.urlopen(request, timeout=25) as response:
-        return response.read().decode("utf-8-sig")
-
-
-def yahoo_symbol(value):
-    symbol = value.strip().upper()
-    symbol = re.sub(r"^(NASDAQ|NYSE|NYSEARCA|NYSEAMERICAN|AMEX):", "", symbol)
-    if not re.fullmatch(r"[A-Z0-9^][A-Z0-9.^=\-]{0,19}", symbol):
-        raise ValueError("無效的股票代號")
-    # US share classes use a hyphen on Yahoo. Preserve other exchange suffixes.
-    return re.sub(r"^([A-Z]+)\.([AB])$", r"\1-\2", symbol)
-
-
-def symbols_from_column(source, column_name, list_name):
-    reader = csv.DictReader(io.StringIO(source))
-    fields = {name.strip().casefold(): name for name in reader.fieldnames or []}
-    column = fields.get(column_name.strip().casefold())
-    if column is None:
-        raise ValueError(f"Google Sheet 缺少「{column_name}」欄")
+        source = response.read().decode("utf-8-sig")
     symbols = []
-    for number, row in enumerate(reader, start=2):
-        value = (row.get(column) or "").strip()
-        if value:
-            try:
-                symbols.append(yahoo_symbol(value))
-            except ValueError as exc:
-                raise ValueError(f"{list_name}第 {number} 列的股票代號無法辨識") from exc
+    for row in csv.reader(io.StringIO(source)):
+        if len(row) < 3:
+            continue
+        symbol = row[2].strip().upper().replace(".0", "")
+        if re.fullmatch(r"\d{4,6}", symbol):
+            symbols.append(symbol)
     return list(dict.fromkeys(symbols))
 
 
-def watchlist_symbols(source, list_name="觀察清單"):
-    reader = csv.DictReader(io.StringIO(source))
-    fields = {name.strip().casefold(): name for name in reader.fieldnames or []}
-    column = next((fields[k] for k in ("代號", "股票代號", "ticker", "symbol") if k in fields), None)
-    if column is None:
-        raise ValueError(f"{list_name}缺少股票代號欄")
-    return symbols_from_column(source, column, list_name)
+def _field(row, *names):
+    by_casefold = {str(key).strip().casefold(): value for key, value in row.items()}
+    for name in names:
+        value = by_casefold.get(name.casefold())
+        if value is not None:
+            return str(value).strip()
+    return ""
 
 
-def validate_sp500(values):
-    members = list(dict.fromkeys(yahoo_symbol(value) for value in values))
-    if len(members) < 490:
-        raise ValueError(f"S&P 500 成分清單僅取得 {len(members)} 檔")
-    return members
-
-
-def sp500_symbols():
-    try:
-        page = fetch_text(SP500_PAGE)
-        table = re.search(r'<table\b[^>]*\bid="constituents"[^>]*>(.*?)</table>', page, re.S)
-        if not table:
-            raise ValueError("找不到 S&P 500 成分表")
-        cells = re.findall(r"<tr\b[^>]*>\s*<td\b[^>]*>(.*?)</td>", table[1], re.S)
-        return validate_sp500(html.unescape(re.sub(r"<[^>]+>", "", cell)) for cell in cells)
-    except (OSError, ValueError) as exc:
-        logging.warning("S&P 500 constituent table unavailable (%s); trying CSV mirror", exc)
-        rows = csv.DictReader(io.StringIO(fetch_text(SP500_MIRROR)))
-        return validate_sp500(row["Symbol"] for row in rows)
-
-
-def ranked_stocks(field, values, limit):
-    matches = [yf.EquityQuery("eq", [field, value]) for value in values]
-    classification = matches[0] if len(matches) == 1 else yf.EquityQuery("or", matches)
-    query = yf.EquityQuery("and", [yf.EquityQuery("eq", ["region", "us"]), classification])
-    result = yf.screen(query, size=limit, sortField="intradaymarketcap", sortAsc=False)
-    members = list(dict.fromkeys(yahoo_symbol(item["symbol"]) for item in result["quotes"]))
-    if len(members) != limit:
-        raise ValueError(f"{', '.join(values)} 僅取得 {len(members)} / {limit} 檔")
-    return members
+def _codes(rows):
+    codes = []
+    for row in rows:
+        code = _field(row, "Code", "SecuritiesCompanyCode", "證券代號", "股票代號")
+        if not re.fullmatch(r"\d{4,6}", code):
+            continue
+        # Taiwan ETF codes generally begin with 00; keep them in a separate block.
+        codes.append(code)
+    return list(dict.fromkeys(codes))
 
 
 def load_universe():
-    market_lists = fetch_text(MARKET_LISTS_CSV)
+    listed_all = _codes(fetch_json(TWSE_DAILY))
+    otc_all = _codes(fetch_json(TPEX_DAILY))
+    etf = [code for code in dict.fromkeys(listed_all + otc_all) if code.startswith("00")]
     return {
-        "sp500": sp500_symbols(),
-        "healthcare": ranked_stocks("sector", ["Healthcare"], 50),
-        "financial": ranked_stocks("sector", ["Financial Services"], 10),
-        "telecom": ranked_stocks("industry", ["Telecom Services"], 10),
-        "consumer": ranked_stocks("sector", ["Consumer Defensive", "Consumer Cyclical"], 50),
-        "energy": ranked_stocks("sector", ["Energy"], 20),
-        "sheet": symbols_from_column(market_lists, "美股觀察名單", "觀察清單"),
-        "etf": symbols_from_column(market_lists, "美股ETF名單", "ETF清單"),
+        "listed": [code for code in listed_all if not code.startswith("00")],
+        "otc": [code for code in otc_all if not code.startswith("00")],
+        "etf": etf,
+        "sheet": fetch_sheet_column_c(),
     }

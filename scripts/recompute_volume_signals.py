@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DB_PATH = Path(__import__("os").environ.get("DENNY888_DB_PATH") or ROOT / "portfolio.db")
+DB_PATH = Path(__import__("os").environ.get("DENNYTWSE_DB_PATH") or ROOT / "portfolio.db")
 RECENT_DAYS = 5
 BASELINE_DAYS = 60
 MINIMUM_PRICE_BARS = 35

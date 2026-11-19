@@ -1,7 +1,7 @@
 [project]
-name = "denny888"
+name = "dennytwse"
 version = "1.0.0"
-description = "Denny888 US stock MACD PWA"
+description = "台股訊號觀測站"
 requires-python = ">=3.13"
 dependencies = []
 

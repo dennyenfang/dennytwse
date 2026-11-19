@@ -2,21 +2,17 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#101b2d"><meta name="description" content="美股持股與 MACD 訊號追蹤">
-  <meta name="apple-mobile-web-app-title" content="Denny777">
+  <meta name="theme-color" content="#101b2d"><meta name="description" content="台股持股與 MACD 訊號追蹤">
+  <meta name="apple-mobile-web-app-title" content="台股觀測站">
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://denny888.usdollar.win/">
-  <meta property="og:title" content="Denny777">
-  <meta property="og:image" content="https://denny888.usdollar.win/icons/radar-512.png">
+  <meta property="og:title" content="台股訊號觀測站">
   <meta property="og:image:width" content="512">
   <meta property="og:image:height" content="512">
-  <meta property="og:image:alt" content="Denny777 綠色雷達">
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:image" content="https://denny888.usdollar.win/icons/radar-512.png">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" type="image/x-icon" sizes="16x16 24x24 32x32 48x48 64x64 128x128 256x256" href="/favicon.ico?v=2">
-  <title>Denny777</title>
+  <title>台股訊號觀測站</title>
   <style>
     :root{color-scheme:dark;--bg:#0b1220;--panel:#121d30;--panel2:#17243a;--line:#26344b;--muted:#91a0b8;--text:#eef3fb;--blue:#78a9ff;--green:#48d4a0;--red:#ff6c7c;--gold:#ffc66d}
     *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#142540 0,#0b1220 52%);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh;padding:0 18px 40px}
@@ -44,7 +40,6 @@
     #scanMissing strong { color:var(--text); }
     #scanNotice { margin:10px 0 0; color:var(--gold); }
     #scanRetry { margin:6px 0; font-size:13px; }
-    #scanProductionLink { color:var(--blue); }
     .scan-no-match { color:#ff6161; font-weight:700; animation:scan-fade 2.4s ease-in-out infinite; }
     @keyframes scan-fade { 0%,100% { opacity:1; } 50% { opacity:.35; } }
     @media (prefers-reduced-motion:reduce) { .scan-no-match { animation:none; } }
@@ -88,9 +83,9 @@
       <div class="brand">
         <img class="mark" src="/favicon.ico?v=2" width="42" height="42" alt="">
         <div>
-          <div class="eyebrow">美股 MACD 持股提醒</div>
+          <div class="eyebrow">台股 MACD 訊號提醒</div>
           <div class="title-row">
-            <h1>Denny777</h1>
+            <h1>台股訊號觀測站</h1>
             <button id="remarkButton" class="remark-trigger" type="button" aria-haspopup="dialog" aria-controls="remarkDialog">Remark</button>
           </div>
         </div>
@@ -104,10 +99,9 @@
           <form method="dialog"><button class="remark-close" aria-label="關閉備註" type="submit">×</button></form>
         </div>
         <dl class="remark-links">
-          <div><dt>GitHub repo</dt><dd><a href="https://github.com/dennyroland/denny888" target="_blank" rel="noopener noreferrer">dennyroland/denny888</a></dd></div>
-          <div><dt>正式網址</dt><dd><a href="https://denny888.usdollar.win/" target="_blank" rel="noopener noreferrer">denny888.usdollar.win</a></dd></div>
-          <div><dt>股票觀察清單</dt><dd><a href="https://docs.google.com/spreadsheets/d/16yDbTE_8iPUApTqiL3eZ_qRZnTwYricccNkztk2nqQM/edit?usp=sharing" target="_blank" rel="noopener noreferrer">USTICK（Google Sheet）</a></dd></div>
-          <div><dt>日線行情資料</dt><dd>正式站透過 <a href="https://ranaroussi.github.io/yfinance/" target="_blank" rel="noopener noreferrer">yfinance</a> 取得 <a href="https://finance.yahoo.com/" target="_blank" rel="noopener noreferrer">Yahoo Finance</a> 行情。</dd></div>
+          <div><dt>GitHub repo</dt><dd><a href="https://github.com/dennyroland/dennytwse" target="_blank" rel="noopener noreferrer">dennyroland/dennytwse</a></dd></div>
+          <div><dt>股票觀察清單</dt><dd><a href="https://docs.google.com/spreadsheets/d/1miH6Rv7AS0xI8bxM-9X-kHTErM3SuPmx-55xh4-nj28/edit?usp=sharing" target="_blank" rel="noopener noreferrer">Google Sheet C 欄（台股代號）</a></dd></div>
+          <div><dt>日線行情資料</dt><dd>上市行情採 <a href="https://openapi.twse.com.tw/" target="_blank" rel="noopener noreferrer">臺灣證券交易所 OpenAPI</a>；上櫃行情採 <a href="https://www.tpex.org.tw/openapi/" target="_blank" rel="noopener noreferrer">櫃買中心 OpenAPI</a>。</dd></div>
         </dl>
       </div>
     </dialog>
@@ -122,40 +116,36 @@
         <a id="manageFallback" href="/manage/" hidden>前往管理頁面</a>
         <fieldset id="manageControls" hidden disabled>
           <form id="holdingForm" class="form" autocomplete="off">
-            <div class="field"><label for="symbol">美股代號</label><input id="symbol" placeholder="例如 AAPL" maxlength="20" required></div>
+            <div class="field"><label for="symbol">台股代號</label><input id="symbol" placeholder="例如 2330" maxlength="20" required></div>
             <div class="field"><label for="shares">股數</label><input id="shares" type="number" min="0.000001" step="any" placeholder="10" required></div>
-            <div class="field"><label for="cost">平均持有成本（USD）</label><input id="cost" type="number" min="0" step="any" placeholder="185.50" required></div>
+            <div class="field"><label for="cost">平均持有成本（TWD）</label><input id="cost" type="number" min="0" step="any" placeholder="100.00" required></div>
             <button class="primary" type="submit">新增／更新</button>
           </form>
-          <div class="tablewrap"><table aria-label="可編輯的持股"><thead><tr><th>代號</th><th>股數</th><th>平均成本（USD）</th><th>操作</th></tr></thead><tbody id="manageRows"></tbody></table></div>
+          <div class="tablewrap"><table aria-label="可編輯的持股"><thead><tr><th>代號</th><th>股數</th><th>平均成本（TWD）</th><th>操作</th></tr></thead><tbody id="manageRows"></tbody></table></div>
           <button id="refreshBtn" type="button">同步持股與行情</button>
           <small class="sub">從 Google Sheet 匯入時，未填股數預設為 5 股，未填成本採最近收盤價。</small>
         </fieldset>
       </div>
     </dialog>
-    <section class="hero"><div><h2>美股買賣訊號觀察站</h2><p>追蹤 MACD 零軸翻轉與交叉訊號，價格採日線收盤資料。</p><div class="status"><i class="dot"></i><span id="status">正在載入…</span></div></div><div class="badge">日線 MACD（12, 26, 9）</div></section>
+    <section class="hero"><div><h2>台股訊號觀測站</h2><p>追蹤 MACD 零軸翻轉與交叉訊號，價格採官方日線收盤資料。</p><div class="status"><i class="dot"></i><span id="status">正在載入…</span></div></div><div class="badge">日線 MACD（12, 26, 9）</div></section>
     <div class="grid"><main>
       <section class="panel" id="market-scan" aria-labelledby="marketTitle">
-        <div class="panelhead"><div><h2 id="marketTitle">美股訊號掃描</h2><span class="sub">每日收盤訊號 · 檢查近 5 日最高量是否逾此前 60 日均量的 1.5 倍</span></div></div>
+        <div class="panelhead"><div><h2 id="marketTitle">台股訊號掃描</h2><span class="sub">每日收盤訊號 · 檢查近 5 日最高量是否逾此前 60 日均量的 1.5 倍</span></div></div>
         <div class="groupbar">
           <label class="sub" for="marketGroup">股票區塊</label>
           <select id="marketGroup">
-            <option value="all">全部（合併去重）</option>
-            <option value="sp500">S&amp;P 500</option>
-            <option value="healthcare">醫療保健前 50</option>
-            <option value="financial">金融前 10</option>
-            <option value="telecom">電信營運商前 10</option>
-            <option value="consumer">消費品前 50</option>
-            <option value="energy">能源前 20</option>
+            <option value="all">全部（上市＋上櫃）</option>
+            <option value="listed">上市</option>
+            <option value="otc">上櫃</option>
+            <option value="etf">ETF</option>
             <option value="sheet" selected>觀察清單</option>
-            <option value="etf">ETF清單</option>
             <option value="my">我的持股</option>
           </select>
           <span id="scanMeta" class="scanmeta" aria-live="polite"></span>
         </div>
         <div id="scanFilters" class="scanfilters" role="group" aria-label="訊號篩選"></div>
         <div class="tablewrap">
-          <table class="scan-table" aria-label="美股訊號掃描結果">
+          <table class="scan-table" aria-label="台股訊號掃描結果">
             <thead><tr>
               <th><button data-sort="symbol" title="股票代碼">代號</button></th>
               <th><button data-sort="close" title="收盤價">$</button></th>
@@ -173,11 +163,10 @@
         <details id="scanMissing" hidden><summary></summary><ul></ul></details>
         <p id="scanNotice" class="scanmeta" role="status" hidden></p>
         <button id="scanRetry" type="button" hidden>重新讀取結果</button>
-        <a id="scanProductionLink" href="https://denny888.usdollar.win/#market-scan" hidden>查看正式站的掃描結果</a>
       </section>
-      <section class="panel ticker-lookup-panel" aria-labelledby="tickerLookupTitle"><div class="panelhead"><h2 id="tickerLookupTitle">查詢個股</h2><span class="sub">輸入美股代號，開啟價格、圖表與訊號</span></div><form id="tickerLookup" class="ticker-lookup" role="search"><div class="field"><label for="tickerLookupSymbol">股票代號</label><input id="tickerLookupSymbol" type="text" maxlength="20" placeholder="例如 AAPL" autocomplete="off" autocapitalize="characters" required></div><button type="submit">查詢詳細資料</button></form><p id="tickerLookupStatus" class="ticker-lookup-status" role="status" aria-live="polite"></p></section>
+      <section class="panel ticker-lookup-panel" aria-labelledby="tickerLookupTitle"><div class="panelhead"><h2 id="tickerLookupTitle">查詢個股</h2><span class="sub">輸入台股代號，開啟價格、圖表與訊號</span></div><form id="tickerLookup" class="ticker-lookup" role="search"><div class="field"><label for="tickerLookupSymbol">股票代號</label><input id="tickerLookupSymbol" type="text" maxlength="20" placeholder="例如 2330" autocomplete="off" autocapitalize="characters" required></div><button type="submit">查詢詳細資料</button></form><p id="tickerLookupStatus" class="ticker-lookup-status" role="status" aria-live="polite"></p></section>
       <section class="panel" id="my-portfolio"><div class="panelhead"><div><h2 id="portfolioHeading">我的持股</h2><span class="sub" id="holdingCount">0 檔</span></div><span class="sub">資料庫保存 · 依此瀏覽器區分</span></div>
-        <form id="personalHoldingForm" class="personal-form" autocomplete="off"><label class="sub" for="personalSymbol">新增股票代號</label><input id="personalSymbol" type="text" maxlength="20" placeholder="例如 AAPL" autocapitalize="characters" required><button type="submit">新增</button></form>
+        <form id="personalHoldingForm" class="personal-form" autocomplete="off"><label class="sub" for="personalSymbol">新增股票代號</label><input id="personalSymbol" type="text" maxlength="20" placeholder="例如 2330" inputmode="numeric" required><button type="submit">新增</button></form>
         <div id="formError" class="error"></div><div class="tablewrap"><table class="scan-table" aria-label="我的持股訊號"><thead><tr><th>代號</th><th>$</th><th>%</th><th>金叉</th><th>轉正</th><th>轉負</th><th>死叉</th><th>爆量</th></tr></thead><tbody id="myHoldings"><tr><td colspan="8" class="empty">輸入代號即可新增持股</td></tr></tbody></table></div>
       </section>
       <section class="panel"><div class="panelhead"><div><h2>MACD 歷史圖</h2><span class="sub">日線最近 120 根</span></div><div class="charttop"><label class="sub" for="chartSymbol">代號</label><select id="chartSymbol" aria-label="選擇圖表股票"><option value="">目前無可選股票</option></select></div></div><div id="chartStats" class="chartstats"></div><div class="chartbox"><canvas id="macdChart" aria-label="MACD 線、訊號線與柱狀圖"></canvas></div><div class="chartlegend"><span class="key"><i class="swatch"></i>MACD 黑線</span><span class="key"><i class="swatch signal"></i>訊號線</span><span class="key"><i class="swatch hist"></i>柱狀圖（差值 ×10）</span><span class="key"><i class="swatch cross"></i>訊號線交叉</span><span class="key"><i class="swatch zero"></i>零軸穿越</span></div><div class="chartnote">柱狀圖 = MACD − 訊號線，圖中柱高以 10:1 放大；零軸以上為綠色、以下為紅色。金色圓點是黑線與訊號線交叉，青色菱形是 MACD 黑線穿越零軸。MACD 計算為 EMA(12) − EMA(26)，訊號線為其 EMA(9)。</div></section>
@@ -186,7 +175,7 @@
       <section class="panel"><div class="panelhead"><h2>追蹤的 MACD 訊號</h2></div><div class="explain"><div><i class="legend" style="background:#53dca7"></i><b>MACD 線轉正</b>：黑線由零軸下穿越到零軸上。</div><div><i class="legend" style="background:#ff7183"></i><b>MACD 線轉負</b>：黑線由零軸上跌破零軸。</div><div><i class="legend" style="background:#79aaff"></i><b>黃金交叉</b>：黑線由下往上穿越訊號線。</div><div><i class="legend" style="background:#ffc66d"></i><b>死亡交叉</b>：黑線由上往下跌破訊號線。</div><div class="sub">MACD = EMA(12) − EMA(26)；訊號線 = MACD 的 EMA(9)。訊號以每日收盤資料確認。</div></div></section>
       <section class="panel"><div class="panelhead"><h2>提醒設定</h2></div><div class="explain">網頁開啟期間每 5 分鐘檢查一次。請先允許瀏覽器通知，出現新訊號時會顯示桌面／手機通知；提醒只在本機執行的 App 開啟時檢查。</div><div id="installHelp" class="sub" style="margin-top:12px">可從瀏覽器選單將此 App 加入主畫面。</div></section>
     </aside></div>
-    <div class="foot">行情資料由 Yahoo Finance 提供，可能延遲或有缺漏；此工具只提供技術指標提醒。</div>
+    <div class="foot">行情資料由臺灣證券交易所及櫃買中心提供；此工具只提供技術指標提醒。</div>
   </div><div id="toast" class="toast"></div><div id="detailModal" class="detail-overlay" hidden><section class="detail-dialog" role="dialog" aria-modal="true" aria-labelledby="detailTitle"><div class="detail-head"><div><h2 id="detailTitle">個股詳細資料</h2><span id="detailDate" class="sub"></span></div><button id="detailClose" aria-label="關閉個股詳細資料">關閉 ✕</button></div><div id="detailBody"><div class="detail-load">載入個股資料…</div></div></section></div>
   <script>
     const remarkDialog = document.getElementById('remarkDialog');
@@ -194,8 +183,8 @@
     remarkDialog.addEventListener('click', event => {
       if (event.target === remarkDialog) remarkDialog.close();
     });
-    const $=s=>document.querySelector(s), money=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n), pct=n=>(n>=0?'+':'')+n.toFixed(2)+'%';let chartData=[],personalSnapshot=null;
-    const WATCHLIST_KEY='denny777Watchlist', WATCHLIST_ID_KEY='denny777BrowserId';
+    const $=s=>document.querySelector(s), money=n=>new Intl.NumberFormat('zh-TW',{style:'currency',currency:'TWD',maximumFractionDigits:2}).format(n), pct=n=>(n>=0?'+':'')+n.toFixed(2)+'%';let chartData=[],personalSnapshot=null;
+    const WATCHLIST_KEY='dennytwseWatchlist', WATCHLIST_ID_KEY='dennytwseBrowserId';
     let watchlistSymbols=[];
     function localWatchlist(){return [...watchlistSymbols]}
     function watchlistId(){let id=localStorage.getItem(WATCHLIST_ID_KEY);if(!id){id=crypto.randomUUID();localStorage.setItem(WATCHLIST_ID_KEY,id)}return id}
@@ -374,14 +363,6 @@
           scanNotice.textContent = attemptNotice(data.latest_attempt);
           if (snapshot && !scanNotice.textContent) scanNotice.textContent = '目前顯示上次成功讀取的結果。';
         } else if (!response.ok || data?.status !== 'complete' || !Array.isArray(data.rows) || !data.groups) {
-          const alternate = location.hostname.endsWith('.workers.dev') || location.hostname.endsWith('.chatgpt.site');
-          if (alternate && (response.status === 404 || (response.ok && !json))) {
-            snapshotSupported = false;
-            if (!snapshot) scanEmpty.textContent = '此版本沒有已發布的掃描結果。';
-            $('#scanProductionLink').hidden = false;
-            scanRetry.hidden = true;
-            return;
-          }
           if (response.status === 401 || response.status === 503) throw new Error(data?.error || '此區塊目前無法讀取。');
           throw new Error(data?.error || `無法讀取股票區塊（HTTP ${response.status}）。`);
         } else {
@@ -461,7 +442,7 @@
       event.preventDefault();
       const symbol = $('#tickerLookupSymbol').value.trim().toUpperCase();
       if (!/^[A-Z0-9.^=-]{1,20}$/.test(symbol)) {
-        $('#tickerLookupStatus').textContent = '請輸入有效的美股代號，例如 AAPL 或 BRK-B。';
+        $('#tickerLookupStatus').textContent = '台股代號需為 4 至 6 位數字，例如 2330。';
         return;
       }
       $('#tickerLookupStatus').textContent = '';
@@ -689,7 +670,7 @@
           <td><span class="signal">${h.macd>=h.signal?'多方':'空方'}</span><small class="muted">${h.macd.toFixed(3)} / ${h.signal.toFixed(3)}</small></td></tr>`);
         for (const item of data.errors) {
           rows.push(`<tr><td><button class="tickerlink" data-detail="${item.symbol}">${item.symbol}</button></td>
-            <td colspan="4" class="muted">等待有效的 yfinance 報價</td></tr>`);
+            <td colspan="4" class="muted">等待行情資料</td></tr>`);
         }
         $('#holdings').innerHTML = rows.join('') ||
           `<tr><td colspan="5" class="empty">尚未新增持股</td></tr>`;
@@ -850,7 +831,7 @@
       event.preventDefault();
       const form=event.currentTarget, button=form.querySelector('button'), symbol=$('#personalSymbol').value.trim().toUpperCase();
       try {
-        if(!symbol||symbol.length>20||![...symbol].every(c=>/[A-Z0-9.\-^=]/.test(c)))throw new Error('請輸入有效的美股代號，例如 AAPL 或 BRK-B。');
+        if(!/^\d{4,6}$/.test(symbol))throw new Error('台股代號需為 4 至 6 位數字，例如 2330。');
         const existing=localWatchlist(); if(existing.includes(symbol)){toast(`${symbol} 已在清單中`);return}
         button.disabled=true; button.textContent='儲存中…';
         await api('/api/my-holdings',{method:'POST',body:JSON.stringify({symbol})});

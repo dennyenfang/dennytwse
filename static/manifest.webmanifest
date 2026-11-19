@@ -1,7 +1,7 @@
 {
-  "name": "Denny888",
-  "short_name": "Denny888",
-  "description": "追蹤美股持股與 MACD 訊號",
+  "name": "台股訊號觀測站",
+  "short_name": "台股觀測",
+  "description": "追蹤台股持股與 MACD 訊號",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0b1220",

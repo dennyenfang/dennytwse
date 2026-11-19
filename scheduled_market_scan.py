@@ -1,4 +1,4 @@
-"""Publish preliminary and confirmation scans after the official US equity close."""
+"""Publish preliminary and confirmation scans after the Taiwan equity close."""
 
 import os
 from datetime import date, datetime, timedelta, timezone
@@ -8,17 +8,17 @@ from zoneinfo import ZoneInfo
 import exchange_calendars as xcals
 
 
-NEW_YORK = ZoneInfo("America/New_York")
-PRELIMINARY_DELAY = timedelta(minutes=20)
-CONFIRMATION_DELAY = timedelta(minutes=60)
+TAIPEI = ZoneInfo("Asia/Taipei")
+PRELIMINARY_DELAY = timedelta(hours=5, minutes=10)
+CONFIRMATION_DELAY = timedelta(hours=6, minutes=10)
 
 
 def _latest_due_close(now: datetime) -> datetime:
     if now.utcoffset() is None:
         raise ValueError("now must include a timezone")
     cutoff = now.astimezone(timezone.utc) - PRELIMINARY_DELAY
-    market = xcals.get_calendar("XNYS")
-    session = market.date_to_session(cutoff.astimezone(NEW_YORK).date(), direction="previous")
+    market = xcals.get_calendar("XTAI")
+    session = market.date_to_session(cutoff.astimezone(TAIPEI).date(), direction="previous")
     if market.session_close(session) > cutoff:
         session = market.previous_session(session)
     return market.session_close(session)
@@ -41,7 +41,7 @@ def run_if_due(db_path: Path, now: datetime):
 
 
 if __name__ == "__main__":
-    db_path = Path(os.environ.get("DENNY888_DB_PATH") or Path(__file__).with_name("portfolio.db"))
+    db_path = Path(os.environ.get("DENNYTWSE_DB_PATH") or Path(__file__).with_name("portfolio.db"))
     result = run_if_due(db_path, datetime.now(timezone.utc))
     if result is not None:
         print(f"Market scan {result['as_of']} {result['phase']} {result['status']} "

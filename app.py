@@ -16,15 +16,15 @@ from pathlib import Path
 
 import jwt
 import market_scan_store
+import twse_data
 from scheduled_market_scan import latest_due_session
 import pandas as pd
-import yfinance as yf
 from dotenv import load_dotenv
 from flask import Flask, g, has_request_context, jsonify, request, send_from_directory
 
 ROOT = Path(__file__).resolve().parent
 load_dotenv(ROOT / ".env")
-DB_PATH = Path(os.environ.get("DENNY888_DB_PATH") or ROOT / "portfolio.db")
+DB_PATH = Path(os.environ.get("DENNYTWSE_DB_PATH") or ROOT / "portfolio.db")
 revision_file = ROOT / ".deploy-revision"
 RELEASE_COMMIT = revision_file.read_text().strip() if revision_file.is_file() else None
 app = Flask(__name__, static_folder="static")
@@ -34,12 +34,12 @@ SHEET_ID = os.environ.get("SHEET_ID", "")
 SHEET_GID = os.environ.get("SHEET_GID", "0")
 SHEET_CACHE = {"at": 0.0, "count": 0, "error": None}
 PERSONAL_SCAN_CACHE = {}
-PUBLIC_SHARED = os.environ.get("DENNY888_PUBLIC_SHARED", "0").strip().lower() not in {"", "0", "false", "off"}
-PUBLIC_EDITING = os.environ.get("DENNY888_PUBLIC_EDITING", "").strip() == "1"
-ACCESS_TEAM = os.environ.get("DENNY888_ACCESS_TEAM_URL", "").rstrip("/")
-ACCESS_AUD = os.environ.get("DENNY888_ACCESS_AUD", "")
-EDITOR_EMAILS = {email.strip().casefold() for email in os.environ.get("DENNY888_EDITOR_EMAILS", "").split(",") if email.strip()}
-PUBLIC_ORIGIN = os.environ.get("DENNY888_PUBLIC_ORIGIN", "").rstrip("/")
+PUBLIC_SHARED = os.environ.get("DENNYTWSE_PUBLIC_SHARED", "0").strip().lower() not in {"", "0", "false", "off"}
+PUBLIC_EDITING = os.environ.get("DENNYTWSE_PUBLIC_EDITING", "").strip() == "1"
+ACCESS_TEAM = os.environ.get("DENNYTWSE_ACCESS_TEAM_URL", "").rstrip("/")
+ACCESS_AUD = os.environ.get("DENNYTWSE_ACCESS_AUD", "")
+EDITOR_EMAILS = {email.strip().casefold() for email in os.environ.get("DENNYTWSE_EDITOR_EMAILS", "").split(",") if email.strip()}
+PUBLIC_ORIGIN = os.environ.get("DENNYTWSE_PUBLIC_ORIGIN", "").rstrip("/")
 
 
 @lru_cache(maxsize=1)
@@ -186,8 +186,8 @@ def sync_sheet_holdings(force=False):
 
 def valid_symbol(value):
     symbol = str(value or "").strip().upper()
-    if not symbol or len(symbol) > 20 or not all(c.isalnum() or c in ".-^=" for c in symbol):
-        raise ValueError("請輸入有效的美股代號，例如 AAPL 或 BRK-B。")
+    if not re.fullmatch(r"\d{4,6}", symbol):
+        raise ValueError("台股代號需為 4 至 6 位數字，例如 2330。")
     return symbol
 
 
@@ -242,7 +242,7 @@ def personal_scan_payload(owner=None, as_of=None, symbols=None):
             reasons.pop(symbol, None)
             continue
         try:
-            frame = yf.Ticker(symbol).history(period="2y", interval="1d", auto_adjust=True)
+            frame = twse_data.history(symbol, period="1y")
             row, _ = market_scan_store._calculate(symbol, frame, session, db_path=DB_PATH)
             PERSONAL_SCAN_CACHE[cache_key] = (time.monotonic(), row)
             available[symbol] = row
@@ -401,7 +401,7 @@ def fetch_macd(symbol):
     cached = PRICE_CACHE.get(symbol)
     if cached and cached[1] == session and time.monotonic() - cached[0] < 240:
         return cached[2]
-    frame = yf.Ticker(symbol).history(period="1y", interval="1d", auto_adjust=True)
+    frame = twse_data.history(symbol, period="1y")
     if frame.empty or "Close" not in frame:
         raise ValueError("找不到價格資料，請確認代號。")
     close = frame.loc[:session.isoformat(), "Close"].dropna().tail(market_scan_store.PRICE_WINDOW)
@@ -529,7 +529,7 @@ def stock_detail(symbol):
         cached = DETAIL_CACHE.get(symbol)
         if cached and cached[1] == session and time.monotonic() - cached[0] < 240:
             return jsonify(cached[2])
-        frame = yf.Ticker(symbol).history(period="1y", interval="1d", auto_adjust=True)
+        frame = twse_data.history(symbol, period="1y")
         if frame.empty or not {"Open", "High", "Low", "Close", "Volume"}.issubset(frame.columns):
             raise ValueError("找不到完整的日線 OHLCV 資料。")
         frame = frame.loc[:session.isoformat()].dropna(subset=["Close"]).tail(240)
@@ -570,4 +570,4 @@ def stock_detail(symbol):
 
 if __name__ == "__main__":
     init_db()
-    app.run(host="127.0.0.1", port=5001, debug=False)
+    app.run(host="127.0.0.1", port=int(os.environ.get("DENNYTWSE_PORT", "5003")), debug=False)
