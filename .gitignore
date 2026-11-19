@@ -4,6 +4,8 @@
 *.db
 *.sqlite
 *.sqlite3
+# Curated market-data snapshot; it excludes personal holdings and alerts.
+!data/market_snapshot.sqlite
 .venv/
 __pycache__/
 *.py[cod]

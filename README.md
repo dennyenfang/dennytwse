@@ -37,6 +37,10 @@ python -m flask --app app run --host 127.0.0.1 --port 5002
 
 本機開發可執行 `python scheduled_market_scan.py`，產生最近已到期的交易日結果。觀察清單及 ETF清單分別讀取同一 Google Sheet 中「美股觀察名單」和「美股ETF名單」欄，共用持股由管理頁維護。
 
+## GitHub 市場行情快照
+
+`data/market_snapshot.sqlite` 是從本機 `portfolio.db` 匯出的市場資料快照，包含掃描結果、分類名單、掃描紀錄及日線，不包含 `holdings`、`user_holdings` 或 `alerts` 個人資料表。更新快照時執行 `python scripts/export_market_snapshot.py`，再提交此檔案。這是程式庫中的靜態快照；正式 Raspberry Pi 服務仍使用 `~/.local/share/denny888/data/portfolio.db`，兩者不會因推送程式碼而自動同步。
+
 ## ropihung 部署
 
 正式服務使用 Gunicorn。Cloudflare Tunnel 連到 `http://127.0.0.1:5001`。市場掃描可公開瀏覽；個人持股清單儲存在訪客的瀏覽器。
