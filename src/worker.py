@@ -295,8 +295,8 @@ class Default(WorkerEntrypoint):
                 if len(points) < 35: continue
                 current, previous = points[-1], points[-2]
                 recent_volumes = points[-5:]
-                baseline_volumes = points[-35:-5]
-                baseline_volume = sum(p["volume"] for p in baseline_volumes) / 30
+                baseline_volumes = points[-65:-5] if len(points) >= 65 else []
+                baseline_volume = sum(p["volume"] for p in baseline_volumes) / 60 if len(baseline_volumes) == 60 else 0
                 max_volume_day = max(recent_volumes, key=lambda p: p["volume"])
                 vol_pct = (max_volume_day["volume"] / baseline_volume - 1) * 100 if baseline_volume else 0
                 spike = baseline_volume > 0 and max_volume_day["volume"] > 1.5 * baseline_volume
@@ -308,4 +308,4 @@ class Default(WorkerEntrypoint):
             except Exception:
                 continue
         label = GROUPS[group][0]
-        return {"group": group, "group_label": label, "as_of": max((r["date"] for r in rows), default=""), "rows": rows, "count": len(rows), "total": len(symbols), "offset": offset, "next_offset": offset + limit if offset + limit < len(symbols) else None, "volume_threshold": 1.5, "volume_window": 5, "volume_baseline_window": 30}
+        return {"group": group, "group_label": label, "as_of": max((r["date"] for r in rows), default=""), "rows": rows, "count": len(rows), "total": len(symbols), "offset": offset, "next_offset": offset + limit if offset + limit < len(symbols) else None, "volume_threshold": 1.5, "volume_window": 5, "volume_baseline_window": 60}

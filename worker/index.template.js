@@ -131,11 +131,11 @@ async function api(request, url) {
   if(path==="/api/sync-sheet"&&method==="POST") return json({count:0,new:0,error:"Codex Site 版本使用此瀏覽器的本機持股清單。"});
   if(path==="/api/market-scan"){
     const group=url.searchParams.get("group")||"healthcare", symbols=GROUPS[group]||GROUPS.healthcare;
-    const settled=await Promise.allSettled(symbols.map(async symbol=>{const points=await history(symbol),p=points.at(-1),prev=points.at(-2),v=points.slice(-21,-1).reduce((s,x)=>s+x.volume,0)/20,recent=points.slice(-5),baseline=points.slice(-35,-5),baselineVolume=baseline.length===30?baseline.reduce((s,x)=>s+x.volume,0)/30:0,maxVolumeDay=recent.reduce((best,x)=>x.volume>best.volume?x:best,recent[0]||p),spike=baselineVolume>0&&maxVolumeDay.volume>1.5*baselineVolume;
+    const settled=await Promise.allSettled(symbols.map(async symbol=>{const points=await history(symbol),p=points.at(-1),prev=points.at(-2),v=points.slice(-21,-1).reduce((s,x)=>s+x.volume,0)/20,recent=points.slice(-5),baseline=points.slice(-65,-5),baselineVolume=baseline.length===60?baseline.reduce((s,x)=>s+x.volume,0)/60:0,maxVolumeDay=recent.reduce((best,x)=>x.volume>best.volume?x:best,recent[0]||p),spike=baselineVolume>0&&maxVolumeDay.volume>1.5*baselineVolume;
       const ev=events(points.slice(-120)),last=k=>[...ev].reverse().find(x=>x.kind===k)?.date||"";
       return {symbol,close:p.close,change_pct:prev?(p.close/prev.close-1)*100:0,golden:last("golden"),death:last("death"),positive:last("positive"),negative:last("negative"),volume:p.volume,vol_pct:baselineVolume?(maxVolumeDay.volume/baselineVolume-1)*100:0,spike,spike_dates:spike?[maxVolumeDay.date]:[],avg_dollar_volume:v*p.close,macd:p.macd,signal:p.signal,date:p.date};}));
     const rows=settled.filter(x=>x.status==="fulfilled").map(x=>x.value); if(!rows.length)return json({error:"目前沒有可用行情，請稍後重試。"},503);
-    return json({group,group_label:GROUP_LABELS[group]||group,as_of:rows.map(x=>x.date).sort().at(-1),rows,count:rows.length,volume_threshold:1.5,volume_window:5,volume_baseline_window:30});
+    return json({group,group_label:GROUP_LABELS[group]||group,as_of:rows.map(x=>x.date).sort().at(-1),rows,count:rows.length,volume_threshold:1.5,volume_window:5,volume_baseline_window:60});
   }
   return json({error:"Not found"},404);
 }

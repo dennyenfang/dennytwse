@@ -20,7 +20,8 @@ GROUP_LABELS = {
 PRICE_WINDOW = 200
 EVENT_WINDOW = 3
 VOLUME_WINDOW = 5
-VOLUME_BASELINE_WINDOW = 30
+VOLUME_BASELINE_WINDOW = 60
+MINIMUM_PRICE_BARS = 35
 
 
 class ScanUnavailable(RuntimeError):
@@ -211,10 +212,11 @@ def _calculate(symbol, frame, session, *, db_path=None, published_count=0):
     required_volume_bars = VOLUME_WINDOW + VOLUME_BASELINE_WINDOW
     if fresh_count < required_volume_bars and published_count:
         data = _extend_confirmed_history(db_path, symbol, data, published_count)
-    if len(data) < required_volume_bars:
-        raise ValueError(f"日線不足 {required_volume_bars} 根（目前 {len(data)} 根）")
+    if len(data) < MINIMUM_PRICE_BARS:
+        raise ValueError(f"日線不足 {MINIMUM_PRICE_BARS} 根（目前 {len(data)} 根）")
     close, volume = data["Close"], data["Volume"]
-    if (close <= 0).any() or volume.tail(required_volume_bars).isna().any() or (volume.tail(required_volume_bars) < 0).any():
+    checked_volume_bars = min(len(volume), required_volume_bars)
+    if (close <= 0).any() or volume.tail(checked_volume_bars).isna().any() or (volume.tail(checked_volume_bars) < 0).any():
         raise ValueError("價格或成交量不完整")
     macd = close.ewm(span=12, adjust=False).mean() - close.ewm(span=26, adjust=False).mean()
     signal = macd.ewm(span=9, adjust=False).mean()
@@ -230,8 +232,9 @@ def _calculate(symbol, frame, session, *, db_path=None, published_count=0):
         recent = condition.tail(EVENT_WINDOW)
         days = recent.index[recent]
         events[kind] = days[-1].date().isoformat() if len(days) else ""
-    # Compare the highest-volume day in the latest five sessions with the prior 30-session average.
-    baseline_volume = float(volume.iloc[-required_volume_bars:-VOLUME_WINDOW].mean())
+    # Compare the highest-volume day in the latest five sessions with the prior 60-session average.
+    baseline_volume = (float(volume.iloc[-required_volume_bars:-VOLUME_WINDOW].mean())
+                       if len(volume) >= required_volume_bars else 0.0)
     last_volume = float(volume.iloc[-1])
     recent_volumes = volume.iloc[-VOLUME_WINDOW:]
     highest_volume_date = recent_volumes.idxmax()
