@@ -132,7 +132,7 @@
     <section class="hero"><div><h2>把持股訊號放在一起看</h2><p>追蹤 MACD 零軸翻轉與交叉訊號，價格採日線收盤資料。</p><div class="status"><i class="dot"></i><span id="status">正在載入…</span></div></div><div class="badge">日線 MACD（12, 26, 9）</div></section>
     <div class="grid"><main>
       <section class="panel" id="market-scan" aria-labelledby="marketTitle">
-        <div class="panelhead"><div><h2 id="marketTitle">美股訊號掃描</h2><span class="sub">每日收盤訊號 · 近 120 個交易日事件 · 爆量門檻為近 20 日均量的 1.5 倍</span></div></div>
+        <div class="panelhead"><div><h2 id="marketTitle">美股訊號掃描</h2><span class="sub">每日收盤訊號 · 近 120 個交易日事件 · 檢查近 3 日是否逾此前 30 日均量的 1.5 倍</span></div></div>
         <div class="groupbar">
           <label class="sub" for="marketGroup">股票區塊</label>
           <select id="marketGroup">
@@ -158,7 +158,7 @@
               <th><button data-sort="positive" title="最近 MACD 負轉正日期">0↑</button></th>
               <th><button data-sort="negative" title="最近 MACD 正轉負日期">0↓</button></th>
               <th><button data-sort="death" title="最近死亡交叉日期">DC</button></th>
-              <th><button data-sort="vol_pct" title="當日成交量相對前 20 日均量的變化百分比">Vol</button></th>
+              <th><button data-sort="vol_pct" title="近 3 日成交量相對此前 30 日均量的最大變化百分比">Vol</button></th>
             </tr></thead>
             <tbody id="marketRows"></tbody>
           </table>
@@ -203,7 +203,10 @@
     function matchesFilter(row, key) {
       if (key === 'all') return true;
       if (key === 'spike') return row.spike;
-      if (key.startsWith('spike_')) return row.spike && row[key.slice(6)] === row.date;
+      if (key.startsWith('spike_')) {
+        const signalDate = row[key.slice(6)];
+        return row.spike && (row.spike_dates || [row.date]).includes(signalDate);
+      }
       return Boolean(row[key]);
     }
 

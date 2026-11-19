@@ -121,7 +121,7 @@ def _calculate(symbol, frame, session):
     if len(data) < 35:
         raise ValueError(f"日線不足 35 根（目前 {len(data)} 根）")
     close, volume = data["Close"], data["Volume"]
-    if (close <= 0).any() or volume.tail(21).isna().any() or (volume.tail(21) < 0).any():
+    if (close <= 0).any() or volume.tail(33).isna().any() or (volume.tail(33) < 0).any():
         raise ValueError("價格或成交量不完整")
     macd = close.ewm(span=12, adjust=False).mean() - close.ewm(span=26, adjust=False).mean()
     signal = macd.ewm(span=9, adjust=False).mean()
@@ -137,12 +137,16 @@ def _calculate(symbol, frame, session):
         recent = condition.tail(EVENT_WINDOW)
         days = recent.index[recent]
         events[kind] = days[-1].date().isoformat() if len(days) else ""
-    previous_volume = float(volume.iloc[-21:-1].mean())
+    # Compare each of the latest three sessions against the 30 sessions before them.
+    baseline_volume = float(volume.iloc[-33:-3].mean())
     last_volume = float(volume.iloc[-1])
-    volume_pct = (last_volume / previous_volume - 1) * 100 if previous_volume else 0.0
+    recent_volumes = volume.iloc[-3:]
+    volume_pct = (float(recent_volumes.max()) / baseline_volume - 1) * 100 if baseline_volume else 0.0
+    spike_dates = [index.date().isoformat() for index, value in recent_volumes.items()
+                   if baseline_volume and float(value) > 1.5 * baseline_volume]
     row = dict(symbol=symbol, date=session.isoformat(), close=float(close.iloc[-1]),
                change_pct=float((close.iloc[-1] / close.iloc[-2] - 1) * 100),
-               volume=last_volume, vol_pct=volume_pct, spike=bool(previous_volume and last_volume >= 1.5 * previous_volume),
+               volume=last_volume, vol_pct=volume_pct, spike=bool(spike_dates), spike_dates=spike_dates,
                avg_dollar_volume=float((close * volume).tail(20).mean()), macd=float(macd.iloc[-1]),
                signal=float(signal.iloc[-1]), bar_count=len(close), **events)
     if any(not math.isfinite(value) for value in row.values() if isinstance(value, float)):
