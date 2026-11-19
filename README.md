@@ -25,9 +25,13 @@ python app.py
 
 - 美股持股清單、股數、每股平均成本及未實現損益。
 - 120 日 MACD(12,26,9) 歷史圖與個股詳情。
-- S&P 500、醫療保健、金融、電信營運商、消費品、能源區塊掃描。
+- 美股收盤掃描涵蓋 S&P 500 全部成分股、依市值排序的醫療保健前 50、金融前 10、電信營運商前 10、消費品前 50、能源前 20，以及 [USTICK 觀察清單](https://docs.google.com/spreadsheets/d/16yDbTE_8iPUApTqiL3eZ_qRZnTwYricccNkztk2nqQM/edit?usp=sharing)。各分類保留成員資格，同一代號每天合併掃描一次。消費品合計防禦性與循環性消費類股。
 - 爆大量（當日成交量至少是前 20 日均量 1.5 倍）、MACD 零軸翻轉、黃金／死亡交叉及組合篩選。
 - 行情使用 yfinance / Yahoo Finance。
+
+「美股訊號掃描」讀取 SQLite 最近發布的交易日結果。每次掃描保存當日名單、逐股結果、行情缺漏及掃描時間。網頁的分類、訊號篩選與欄位排序直接使用這份結果。若上游資料暫時無法發布，網頁繼續顯示上一次成功的日期與結果。
+
+本機開發可執行 `python scheduled_market_scan.py`，產生最近已到期的交易日結果。股票觀察清單只讀取 USTICK 的代號欄，共用持股由管理頁維護。
 
 ## ropihung 部署
 
@@ -41,7 +45,7 @@ python app.py
 
 ```sh
 bash deploy/ropihung/install.sh
-systemctl --user status denny888.service denny888-deploy.timer
+systemctl --user status denny888.service denny888-deploy.timer denny888-market-scan.timer
 curl -fsS http://127.0.0.1:5001/healthz
 ```
 
@@ -53,7 +57,9 @@ curl -fsS http://127.0.0.1:5001/healthz
 
 手動觸發檢查可執行 `systemctl --user start denny888-deploy.service`。在 ropihung 查看最近紀錄可執行 `journalctl _SYSTEMD_USER_UNIT=denny888-deploy.service -n 50 --no-pager`。
 
-Google Sheet ID 和持股資料庫存放在 Pi 上。行情與訊號僅供資訊參考。
+`denny888-market-scan.timer` 依紐約證交所日曆，在交易日正式收盤後 10 分鐘啟動掃描，一般為美東 16:10，13:00 提早收盤時為 13:10。主機恢復後會檢查最近到期的交易日。手動檢查可用 `systemctl --user start denny888-market-scan.service`，實際發布結果可查 `/api/market-scan/latest`。選擇特定歷史日期與分類的例子為 `/api/market-scan?as_of=2026-11-18&group=sheet`。
+
+持股匯入表的設定和正式 SQLite 資料庫存放在 Pi 上。行情與訊號僅供資訊參考。
 
 ## Cloudflare Workers 部署
 

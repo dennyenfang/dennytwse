@@ -40,6 +40,8 @@ case "$mode" in
     check)
         exec "${box[@]}" --setenv DENNY888_DB_PATH /tmp/test.db /venv/bin/python -c '
 import sys
+from datetime import datetime, timezone
+from pathlib import Path
 from app import app, init_db
 init_db()
 with app.test_client() as client:
@@ -47,6 +49,12 @@ with app.test_client() as client:
         raise RuntimeError("candidate health check failed")
     if client.get("/").status_code != 200 or client.get("/api/holdings").get_json() != []:
         raise RuntimeError("candidate portfolio smoke test failed")
+if Path("scheduled_market_scan.py").is_file():
+    from market_scan_store import needs_scheduled_scan, run_scan
+    from scheduled_market_scan import latest_due_session
+    session = latest_due_session(datetime.now(timezone.utc))
+    if not needs_scheduled_scan(Path("/tmp/test.db"), session):
+        raise RuntimeError("candidate market scan smoke test failed")
 ' "${3:?expected commit required}"
         ;;
     backup)
@@ -58,6 +66,10 @@ with sqlite3.connect("file:/data/portfolio.db?mode=ro", uri=True) as source, sql
 with open("/tmp/snapshot.db", "rb") as snapshot:
     shutil.copyfileobj(snapshot, sys.stdout.buffer)
 '
+        ;;
+    scan)
+        exec "${box[@]}" --bind "$store/data" /data --setenv DENNY888_DB_PATH /data/portfolio.db \
+            --setenv XDG_CACHE_HOME /data/cache /venv/bin/python /app/scheduled_market_scan.py
         ;;
     serve)
         box+=(--bind "$store/data" /data --setenv DENNY888_DB_PATH /data/portfolio.db

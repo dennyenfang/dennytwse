@@ -12,8 +12,10 @@ test -s "$config/known_hosts"
 mkdir -p "$units"
 install -d -m 0700 "$runtime" "$store" "$store/releases" "$store/venvs" "$store/backups" "$store/data"
 install -m 0700 deploy.sh sandbox.sh "$runtime/"
-install -m 0600 denny888.service denny888-deploy.service denny888-deploy.timer "$units/"
+install -m 0600 denny888.service denny888-deploy.service denny888-deploy.timer \
+    denny888-market-scan.service denny888-market-scan.timer "$units/"
 systemctl --user daemon-reload
 systemctl --user start denny888-deploy.service
 systemctl --user enable denny888.service
 systemctl --user enable --now denny888-deploy.timer
+systemctl --user enable --now denny888-market-scan.timer

@@ -1,0 +1,13 @@
+[Unit]
+Description=Scan the latest completed US equity session
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=%h/.local/share/denny888/current/scheduled_market_scan.py
+
+[Service]
+Type=oneshot
+UMask=0077
+# Keep the release and its virtualenv installed while the scan is running.
+ExecStart=/usr/bin/flock --shared --timeout 900 %h/.local/share/denny888/deploy.lock %h/.local/libexec/denny888/sandbox.sh scan %h/.local/share/denny888/current
+TimeoutStartSec=90min
+NoNewPrivileges=true

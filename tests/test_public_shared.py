@@ -3,6 +3,7 @@ import tempfile
 import time
 import unittest
 from contextlib import ExitStack
+from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
 
@@ -131,17 +132,31 @@ class SharedPortfolioTest(unittest.TestCase):
         for path in ("/portfolio.db", "/.env", "/static/portfolio.db"):
             self.assertEqual(self.client.get(path).status_code, 404)
 
-    def test_public_market_scan_computes_without_persisting_bars(self):
-        frame = pd.DataFrame({"Close": range(50, 100), "Volume": [1000] * 50},
-                             index=pd.date_range("2026-01-05", periods=50))
-        with patch.object(portfolio.yf, "screen", return_value={"quotes": [{"symbol": "TEST"}]}), \
-             patch.object(portfolio.yf, "download", return_value=frame):
-            response = self.client.get("/api/market-scan?group=telecom")
-        self.assertEqual(response.status_code, 200, response.get_json())
-        self.assertEqual(response.json["rows"][0]["symbol"], "TEST")
+    def test_public_market_scan_does_not_contact_yahoo_or_launch_a_job(self):
+        with patch.object(portfolio.yf, "download") as download, patch.object(portfolio.yf, "screen") as screen:
+            for path in ("/api/market-scan/latest", "/api/market-scan?group=telecom"):
+                response = self.client.get(path)
+                self.assertEqual(response.status_code, 503)
+                self.assertEqual(response.json["status"], "pending")
+            self.assertEqual(self.client.get("/api/market-scan?group=unknown").status_code, 400)
+            download.assert_not_called()
+            screen.assert_not_called()
         with portfolio.connect() as db:
-            for table in ("universe_cache", "market_bars", "market_scan_results"):
+            for table in ("daily_market_scans", "market_bars", "market_scan_attempts"):
                 self.assertEqual(db.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0], 0)
+
+    def test_quotes_and_stock_detail_cross_half_day_close_together(self):
+        # The Friday after Thanksgiving closes at 13:00 Eastern. A live cache filled at
+        # 13:09 should immediately admit Friday's candle at 13:10, even across the holiday.
+        days = pd.bdate_range(end="2026-11-27", periods=60).difference(pd.DatetimeIndex(["2026-11-26"]))
+        frame = pd.DataFrame({key: range(1, len(days) + 1) for key in ("Open", "High", "Low", "Close", "Volume")}, index=days)
+        with patch.object(portfolio, "PRICE_CACHE", {}), patch.object(portfolio, "DETAIL_CACHE", {}), \
+             patch.object(portfolio, "datetime", wraps=datetime) as clock, patch.object(portfolio.yf, "Ticker") as ticker:
+            ticker.return_value.history.return_value = frame
+            for minute, expected in (("09", "2026-11-25"), ("10", "2026-11-27")):
+                clock.now.return_value = datetime.fromisoformat(f"2026-11-27T18:{minute}:00+00:00")
+                self.assertEqual(portfolio.fetch_macd("TEST").index[-1].date().isoformat(), expected)
+                self.assertEqual(self.client.get("/api/stock-detail/TEST").json["date"], expected)
 
     def test_unspecified_development_mode_keeps_original_endpoints(self):
         with patch.object(portfolio, "PUBLIC_SHARED", False):

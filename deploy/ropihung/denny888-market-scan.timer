@@ -1,0 +1,13 @@
+[Unit]
+Description=Check for a US market scan at ten and forty minutes past the hour
+
+[Timer]
+# The exchange calendar selects the session. Both 13:10 ET early closes and
+# 16:10 ET regular closes fire here. Later ticks retry failed or missed scans.
+OnCalendar=*-*-* *:10,40:00 America/New_York
+OnStartupSec=1min
+Persistent=true
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target
