@@ -25,7 +25,7 @@
     .scanfilters{display:flex;gap:7px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:thin}.scanfilters button{white-space:nowrap;padding:7px 10px;font-size:12px}.scanfilters button.active{background:#29496c;border-color:#78a9ff;color:#fff}.groupbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}.groupbar select{background:#0c1626;color:var(--text);border:1px solid var(--line);border-radius:9px;padding:8px;font:inherit}.scanmeta{color:var(--muted);font-size:11px}.scan-table{min-width:0;width:100%;table-layout:fixed}.scan-table th{padding:7px 3px;text-align:center}.scan-table th:nth-child(1){width:10%}.scan-table th:nth-child(2){width:15%}.scan-table th:nth-child(3){width:12%}.scan-table th:nth-child(4){width:10%}.scan-table th:nth-child(5),.scan-table th:nth-child(6),.scan-table th:nth-child(7),.scan-table th:nth-child(8){width:9%}.scan-table th:nth-child(9){width:17%}.scan-table th button{padding:4px 6px;border:0;background:transparent;font-size:11px;color:inherit}.scan-table td{padding:8px 3px;text-align:center;font-size:11px;white-space:nowrap}.scan-table td.scan-date{font:10px ui-monospace,SFMono-Regular,Menlo,monospace}.scan-table th:first-child,.scan-table td:first-child{position:sticky;left:0;background:#121d30;z-index:1;text-align:left}.scan-table td.stock-name-cell{text-align:left;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}.ticker-name-preview{min-width:80px;color:var(--blue);font-size:12px}.sigbull{color:#48d4a0;font-weight:750}.sigbear{color:#ff7183;font-weight:750}.volhot{color:#78a9ff;font-weight:800}.scan-empty{padding:24px;text-align:center;color:var(--muted)}
     @media(max-width:600px){.scan-table{min-width:0;width:100%;table-layout:fixed}.scan-table th{padding:5px 1px}.scan-table th button{padding:4px 0;font-size:8px}.scan-table td{font-size:8px;padding:5px 0}.scan-table td:first-child{padding-left:1px}.scan-table td.scan-date{font-size:7px}.scanfilters button{padding:7px 9px}.groupbar select{font-size:12px}}
     .ticker-lookup{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:9px;max-width:560px}.ticker-lookup button{height:41px;white-space:nowrap}.ticker-lookup-status{min-height:0;margin-top:7px;font-size:12px}
-    .tickerlink{border:0;background:none;color:#9bc1ff;padding:0;font:inherit;font-weight:800;text-decoration:underline;text-decoration-color:#466486;cursor:pointer}.detail-overlay{position:fixed;inset:0;background:#030811d9;z-index:30;display:grid;place-items:center;padding:16px}.detail-overlay[hidden]{display:none}.detail-dialog{width:min(100%,980px);max-height:94vh;overflow:auto;background:#101b2d;border:1px solid #344660;border-radius:18px;padding:18px;box-shadow:0 24px 80px #0009}.detail-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.detail-head h2{margin:0}.detail-ranges{display:flex;gap:6px;overflow-x:auto;margin:12px 0}.detail-ranges button{padding:6px 10px;font-size:12px}.detail-ranges button.active{background:#29496c;border-color:#78a9ff}.detailstats{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:10px 0 14px}.detailstat{background:#17243a;border:1px solid #26344b;border-radius:11px;padding:10px}.detailstat small{display:block;color:var(--muted);font-size:10px}.detailstat b{font-size:15px}.detailchart{margin:10px 0 14px}.detailchart h3{font-size:13px;margin:4px 0 7px}.detailchart .chartbox{height:170px}.detail-events{display:flex;flex-direction:column;gap:7px;max-height:230px;overflow:auto}.detail-event{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:#17243a;border-radius:9px;font-size:12px}.detail-load{text-align:center;padding:32px;color:var(--muted)}@media(max-width:600px){.detail-overlay{padding:0;align-items:end}.detail-dialog{width:100%;max-height:95vh;border-radius:18px 18px 0 0;padding:14px}.detailstats{grid-template-columns:repeat(2,1fr)}.detailchart .chartbox{height:145px}.detail-head h2{font-size:17px}}
+    .tickerlink{border:0;background:none;color:#9bc1ff;padding:0;font:inherit;font-weight:800;text-decoration:underline;text-decoration-color:#466486;cursor:pointer}.stock-name-link{border:0;background:transparent;color:#9bc1ff;padding:0;font:inherit;font-weight:650;text-decoration:underline;text-decoration-color:#466486;cursor:pointer;text-align:left}.stock-name-link:hover{color:#d3e5ff}.detail-overlay{position:fixed;inset:0;background:#030811d9;z-index:30;display:grid;place-items:center;padding:16px}.detail-overlay[hidden]{display:none}.detail-dialog{width:min(100%,980px);max-height:94vh;overflow:auto;background:#101b2d;border:1px solid #344660;border-radius:18px;padding:18px;box-shadow:0 24px 80px #0009}.detail-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.detail-head h2{margin:0}.detail-ranges{display:flex;gap:6px;overflow-x:auto;margin:12px 0}.detail-ranges button{padding:6px 10px;font-size:12px}.detail-ranges button.active{background:#29496c;border-color:#78a9ff}.detailstats{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:10px 0 14px}.detailstat{background:#17243a;border:1px solid #26344b;border-radius:11px;padding:10px}.detailstat small{display:block;color:var(--muted);font-size:10px}.detailstat b{font-size:15px}.detailchart{margin:10px 0 14px}.detailchart h3{font-size:13px;margin:4px 0 7px}.detailchart .chartbox{height:170px}.detail-events{display:flex;flex-direction:column;gap:7px;max-height:230px;overflow:auto}.detail-event{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:#17243a;border-radius:9px;font-size:12px}.detail-load{text-align:center;padding:32px;color:var(--muted)}@media(max-width:600px){.detail-overlay{padding:0;align-items:end}.detail-dialog{width:100%;max-height:95vh;border-radius:18px 18px 0 0;padding:14px}.detailstats{grid-template-columns:repeat(2,1fr)}.detailchart .chartbox{height:145px}.detail-head h2{font-size:17px}}
     .detail-dialog{background:#fff;color:#27343f;border:1px solid #d8e0e7;box-shadow:0 24px 80px #0c243018}.detail-head{border-bottom:1px solid #e5ebf0;padding-bottom:10px}.detail-head h2{font:600 20px/1.1 ui-monospace,SFMono-Regular,Menlo,monospace;color:#1e2a34}.detail-head #detailClose{background:#fff;color:#566675;border-color:#d8e0e7}.detail-head .sub{color:#758391}.detail-quote{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 1px 8px}.detail-price-row{display:flex;align-items:baseline;gap:10px}.detail-price{font:500 27px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:#202b34}.detail-daychange{font:600 12px ui-monospace,SFMono-Regular,Menlo,monospace}.detail-lamps{display:flex;gap:6px;flex-wrap:wrap}.detail-lamp{display:flex;align-items:center;gap:6px;border:1px solid #dce3e9;border-radius:999px;padding:5px 8px;color:#596876;background:#f8fafc;font-size:10px;font-weight:700}.detail-lamp i{width:9px;height:9px;border-radius:50%;display:block}.detail-lamp .green{background:#18a85b;box-shadow:0 0 6px #18a85b80}.detail-lamp .red{background:#e34850;box-shadow:0 0 6px #e3485080}.detail-lamp .yellow{background:#f2bb32;box-shadow:0 0 6px #f2bb3280}.detail-lamp .black{background:#12171c;border:1px solid #12171c}.detail-ranges{margin:7px 0 9px;color:#6f7e8b;font-size:11px;align-items:center}.detail-ranges .range-label{font-weight:700;margin-right:3px}.detail-ranges button{min-width:38px;border:1px solid #dce3ea;background:#fff;color:#637383;border-radius:7px;padding:6px 8px;font:500 10px ui-monospace,SFMono-Regular,Menlo,monospace}.detail-ranges button.active{background:#17365d;border-color:#17365d;color:#fff}.detailstats{grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border-top:1px solid #e4e9ee;border-bottom:1px solid #e4e9ee;margin:10px 0 12px;padding:10px 0;background:#fff}.detailstat{background:#fff;border:0;border-right:1px solid #e4e9ee;border-radius:0;padding:3px 9px}.detailstat:first-child{padding-left:0}.detailstat:last-child{border-right:0}.detailstat small{color:#748290;font-size:9px;letter-spacing:.08em;margin-bottom:3px}.detailstat b{color:#34424f;font:500 11px ui-monospace,SFMono-Regular,Menlo,monospace;white-space:nowrap}.detailchart{margin:0}.detailchart h3{color:#64727e;font:600 10px ui-monospace,SFMono-Regular,Menlo,monospace;margin:4px 0 0}.detail-chart-wrap{position:relative;height:360px;background:#fff;border-top:1px solid #e4e9ee;border-bottom:1px solid #e4e9ee;overflow:hidden}.detail-chart-wrap canvas{width:100%;height:100%;display:block}.detail-chart-label{position:absolute;left:auto;right:10px;color:#72808d;font:9px ui-monospace,SFMono-Regular,Menlo,monospace;z-index:2;pointer-events:none}.detail-chart-label.price-label{top:6px}.detail-chart-label.volume-label{top:51%}.detail-chart-label.macd-label{top:72%}.detail-tooltip{display:none;position:absolute;z-index:3;pointer-events:none;background:#16202aef;border:1px solid #344656;border-radius:7px;padding:6px 8px;font:10px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;color:#f5f7f9;white-space:nowrap;box-shadow:0 8px 24px #1d354455}.detail-events{gap:0;border-top:1px solid #e4e9ee}.detail-event{background:#fff;border-bottom:1px solid #edf1f4;border-radius:0;padding:8px 3px;color:#35424e}.detail-event time{font:11px ui-monospace,SFMono-Regular,Menlo,monospace;color:#657482}.detail-section-title{display:flex;justify-content:space-between;align-items:center;margin:12px 0 5px}.detail-section-title h3{font-size:11px;color:#52616d;margin:0}.detail-legend{display:flex;gap:12px;flex-wrap:wrap;color:#6f7e8b;font-size:9px;margin:5px 0 8px}.detail-legend span{display:inline-flex;align-items:center;gap:5px}.detail-legend i{width:13px;height:2px;background:#12171c}.detail-legend .redline{background:#e34850}.detail-legend .bluebar{width:8px;height:8px;background:linear-gradient(to bottom,#16a34a 0 50%,#dc2626 50% 100%)}.detail-legend .ma5{background:#f97316}.detail-legend .ma20{background:#7c3aed}.detail-legend .ma60{background:#0891b2}.detail-legend .ma120{background:#334155}.detail-legend .triangle{width:9px;height:8px;background:#18a85b;clip-path:polygon(50% 0,100% 100%,0 100%);position:relative}.detail-legend .triangle:after{content:"";position:absolute;inset:2px 2px 1px;background:#fff;clip-path:polygon(50% 0,100% 100%,0 100%)}.detail-legend .down-triangle{transform:rotate(180deg)}@media(max-width:600px){.detail-overlay{padding:0;align-items:end}.detail-dialog{width:100%;max-height:96vh;border-radius:16px 16px 0 0;padding:13px 14px 12px}.detail-head h2{font-size:17px}.detail-price{font-size:24px}.detail-quote{align-items:flex-start;flex-direction:column}.detail-lamps{gap:5px}.detailstats{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:7px}.detailstat:nth-child(2){border-right:0}.detailstat:nth-child(3){padding-left:0}.detail-chart-wrap{height:320px}.detail-chart-label{font-size:8px}}
     .detail-signals{display:flex;gap:7px;flex-wrap:wrap;margin:6px 0 10px}.detail-signal{display:flex;align-items:center;gap:6px;border:1px solid #dce3e9;border-radius:8px;padding:6px 9px;background:#f8fafc;color:#35424e;font-size:11px}.detail-signal i{width:9px;height:9px;border-radius:50%;flex:none}.detail-signal .bull{background:#18a85b;box-shadow:0 0 6px #18a85b80}.detail-signal .bear{background:#e34850;box-shadow:0 0 6px #e3485080}.detail-signal .volume{background:#e39a20;box-shadow:0 0 6px #e39a2080}.detail-signal b{font-size:11px}.detail-signal time{color:#71808c;font:10px ui-monospace,SFMono-Regular,Menlo,monospace}
     .grid > main { min-width:0; }
@@ -233,14 +233,8 @@
 
     function marketRow(row, awaitingConfirmation = false) {
       const tr = document.createElement('tr');
-      const ticker = document.createElement('button');
-      ticker.type = 'button';
-      ticker.className = 'tickerlink';
-      ticker.dataset.detail = row.symbol;
-      ticker.textContent = row.symbol;
-      ticker.setAttribute('aria-label', `查看 ${row.symbol} 詳細資料`);
       const symbolCell = tr.insertCell();
-      symbolCell.append(ticker);
+      symbolCell.textContent = row.symbol;
       if (awaitingConfirmation) {
         const note = document.createElement('small');
         note.className = 'sub';
@@ -249,8 +243,14 @@
       }
       const nameCell = tr.insertCell();
       nameCell.className = 'stock-name-cell';
-      nameCell.textContent = stockNames.get(row.symbol) || row.name || '';
-      nameCell.title = nameCell.textContent;
+      const nameLink = document.createElement('button');
+      nameLink.type = 'button';
+      nameLink.className = 'stock-name-link';
+      nameLink.dataset.detail = row.symbol;
+      nameLink.textContent = stockNames.get(row.symbol) || row.name || '名稱未取得';
+      nameLink.title = `查看 ${row.symbol} 詳細資料`;
+      nameLink.setAttribute('aria-label', `查看 ${nameLink.textContent} ${row.symbol} 詳細資料`);
+      nameCell.append(nameLink);
       const spikeDate = row.spike_dates?.at(-1) || '';
       const fields = [
         [money(row.close), ''], [pct(row.change_pct), row.change_pct >= 0 ? 'positive' : 'negative'],
@@ -709,13 +709,13 @@
         if (request !== portfolioRequest) return;
         $('#holdingCount').textContent = `${data.holding_count} 檔`;
         const rows = data.quotes.map(h => `<tr>
-          <td><button class="tickerlink" data-detail="${h.symbol}">${h.symbol}</button><small class="muted">${h.date} 日線</small></td>
+          <td>${h.symbol}<small class="muted">${h.date} 日線</small></td>
           <td>${money(h.price)}<small class="muted">成本 ${h.cost>0?money(h.cost):'待填'}</small></td>
           <td>${h.shares>0?money(h.value):'待填'}<small class="muted">${h.shares>0?`${h.shares} 股`:'股數待填'}</small></td>
           <td class="${h.pnl===null?'muted':h.pnl>=0?'positive':'negative'}">${h.pnl===null?'待填':money(h.pnl)}<small>${h.pnl_pct===null?'':pct(h.pnl_pct)}</small></td>
           <td><span class="signal">${h.macd>=h.signal?'多方':'空方'}</span><small class="muted">${h.macd.toFixed(3)} / ${h.signal.toFixed(3)}</small></td></tr>`);
         for (const item of data.errors) {
-          rows.push(`<tr><td><button class="tickerlink" data-detail="${item.symbol}">${item.symbol}</button></td>
+          rows.push(`<tr><td>${item.symbol}</td>
             <td colspan="4" class="muted">等待行情資料</td></tr>`);
         }
         $('#holdings').innerHTML = rows.join('') ||
@@ -794,9 +794,9 @@
         const renderPlaceholders = message => {
           const rows = holdings.map(symbol => {
             const tr = document.createElement('tr');
-            const symbolCell = tr.insertCell(); symbolCell.className='my-symbol';
-            const ticker = document.createElement('button'); ticker.type='button'; ticker.className='tickerlink'; ticker.dataset.detail=symbol; ticker.textContent=symbol; symbolCell.append(ticker);
-            const nameCell=tr.insertCell();nameCell.className='stock-name-cell';nameCell.textContent=stockNames.get(symbol)||'';
+            const symbolCell = tr.insertCell(); symbolCell.className='my-symbol'; symbolCell.textContent=symbol;
+            const nameCell=tr.insertCell();nameCell.className='stock-name-cell';
+            const nameLink=document.createElement('button');nameLink.type='button';nameLink.className='stock-name-link';nameLink.dataset.detail=symbol;nameLink.textContent=stockNames.get(symbol)||'名稱未取得';nameLink.setAttribute('aria-label',`查看 ${nameLink.textContent} ${symbol} 詳細資料`);nameCell.append(nameLink);
             const cell = tr.insertCell(); cell.colSpan=7; cell.className='muted'; cell.textContent=message;
             return tr;
           });
@@ -812,10 +812,10 @@
         const rendered = [];
         for (const holding of holdings) {
           const tr = document.createElement('tr');
-          const symbolCell = tr.insertCell(); symbolCell.className = 'my-symbol';
-          const ticker = document.createElement('button'); ticker.type='button'; ticker.className='tickerlink'; ticker.dataset.detail=holding; ticker.textContent=holding; symbolCell.append(ticker);
+          const symbolCell = tr.insertCell(); symbolCell.className = 'my-symbol'; symbolCell.textContent=holding;
           const remove = document.createElement('button'); remove.type='button'; remove.className='my-delete'; remove.dataset.delete=holding; remove.setAttribute('aria-label',`刪除 ${holding}`); remove.textContent='×'; symbolCell.append(remove);
-          const nameCell=tr.insertCell();nameCell.className='stock-name-cell';nameCell.textContent=stockNames.get(holding)||'';nameCell.title=nameCell.textContent;
+          const nameCell=tr.insertCell();nameCell.className='stock-name-cell';
+          const nameLink=document.createElement('button');nameLink.type='button';nameLink.className='stock-name-link';nameLink.dataset.detail=holding;nameLink.textContent=stockNames.get(holding)||'名稱未取得';nameLink.setAttribute('aria-label',`查看 ${nameLink.textContent} ${holding} 詳細資料`);nameCell.append(nameLink);
           const row = rows.get(holding);
           if (row) {
             const fields = [[money(row.close),''],[pct(row.change_pct),row.change_pct>=0?'positive':'negative'],[row.golden,'sigbull'],[row.positive,'sigbull'],[row.negative,'sigbear'],[row.death,'sigbear'],[row.spike_dates?.at(-1)||'', 'volhot']];
@@ -858,7 +858,7 @@
           const host=$(`#${id}`),items=signals[key]||[];
           host.replaceChildren();
           if(!items.length){host.innerHTML=localWatchlist().length?'<span class="sub">目前沒有符合訊號</span>':'<span class="sub">新增持股後顯示訊號</span>';continue}
-          for(const item of items){const button=document.createElement('button');button.type='button';button.className='signal-chip';button.dataset.detail=item.symbol;button.title=`${item.symbol} · ${item.date}`;button.innerHTML=`${item.symbol}<small>${item.date.slice(5).replace('-','/')}</small>`;host.append(button)}
+          for(const item of items){const chip=document.createElement('span');chip.className='signal-chip';chip.title=`${item.symbol} · ${item.date}`;chip.innerHTML=`${item.symbol}<small>${item.date.slice(5).replace('-','/')}</small>`;host.append(chip)}
         }
     }
     async function scan(endpoint = publicShared && canEdit ? '/manage/api/scan' : '/api/scan'){try{const result=await api(endpoint,{method:'POST'});for(const a of result.alerts){toast(`${a.symbol}｜${a.label}`);if('serviceWorker'in navigator&&'Notification'in window&&Notification.permission==='granted'){const reg=await navigator.serviceWorker.ready;reg.showNotification(`${a.symbol}｜${a.label}`,{body:`${a.date} · MACD ${a.macd}，訊號 ${a.signal}`,icon:'/icons/radar-192.png',tag:`${a.symbol}-${a.kind}-${a.date}`})}}if(result.errors.length)$('#formError').textContent=result.errors.map(e=>`${e.symbol}：${e.error}`).join('；');await renderAlerts()}catch(e){$('#status').textContent=`掃描失敗：${e.message}`}}
@@ -889,13 +889,12 @@
         form.reset(); $('#formError').textContent=''; toast('持股已新增');
         $('#holdingCount').textContent=`${watchlistSymbols.length} 檔`;
         $('#chartSymbol').innerHTML=watchlistSymbols.map(item=>`<option value="${item}">${item}${stockNames.get(item)?` ${stockNames.get(item)}`:''}</option>`).join('');
-        const tr=$('#myHoldings').insertRow();const symbolCell=tr.insertCell();symbolCell.className='my-symbol';const ticker=document.createElement('button');ticker.type='button';ticker.className='tickerlink';ticker.dataset.detail=symbol;ticker.textContent=symbol;symbolCell.append(ticker);const nameCell=tr.insertCell();nameCell.className='stock-name-cell';nameCell.textContent=stockNames.get(symbol)||'';const cell=tr.insertCell();cell.colSpan=7;cell.className='muted';cell.textContent='持股已保存，正在讀取訊號…';
+        const tr=$('#myHoldings').insertRow();const symbolCell=tr.insertCell();symbolCell.className='my-symbol';symbolCell.textContent=symbol;const nameCell=tr.insertCell();nameCell.className='stock-name-cell';const nameLink=document.createElement('button');nameLink.type='button';nameLink.className='stock-name-link';nameLink.dataset.detail=symbol;nameLink.textContent=stockNames.get(symbol)||'名稱未取得';nameLink.setAttribute('aria-label',`查看 ${nameLink.textContent} ${symbol} 詳細資料`);nameCell.append(nameLink);const cell=tr.insertCell();cell.colSpan=7;cell.className='muted';cell.textContent='持股已保存，正在讀取訊號…';
         $('#status').textContent=`持股已新增 · ${watchlistSymbols.length} 檔`;
         void renderMyPortfolio().then(async()=>{await renderAlerts();if($('#marketGroup').value==='my')void loadMarketSnapshot();});
       } catch(error) { $('#formError').textContent=error.message; }
       finally { button.disabled=false; button.textContent='新增'; }
     });
-    document.querySelector('.personal-signals').addEventListener('click',event=>{const symbol=event.target.closest('[data-detail]')?.dataset.detail;if(symbol)openStockDetail(symbol)});
     $('#notifyBtn').addEventListener('click',async()=>{if(!('Notification'in window)){toast('此瀏覽器不支援通知');return}const p=await Notification.requestPermission();toast(p==='granted'?'通知已開啟':'尚未允許通知')});
     if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
     async function start() {
