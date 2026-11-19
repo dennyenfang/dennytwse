@@ -8,9 +8,10 @@ import urllib.request
 import math
 import os
 import re
+import uuid
 from contextlib import closing, contextmanager
 from functools import lru_cache
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 import jwt
@@ -32,6 +33,7 @@ DETAIL_CACHE = {}
 SHEET_ID = os.environ.get("SHEET_ID", "")
 SHEET_GID = os.environ.get("SHEET_GID", "0")
 SHEET_CACHE = {"at": 0.0, "count": 0, "error": None}
+PERSONAL_SCAN_CACHE = {}
 PUBLIC_SHARED = os.environ.get("DENNY888_PUBLIC_SHARED", "0").strip().lower() not in {"", "0", "false", "off"}
 PUBLIC_EDITING = os.environ.get("DENNY888_PUBLIC_EDITING", "").strip() == "1"
 ACCESS_TEAM = os.environ.get("DENNY888_ACCESS_TEAM_URL", "").rstrip("/")
@@ -43,6 +45,14 @@ PUBLIC_ORIGIN = os.environ.get("DENNY888_PUBLIC_ORIGIN", "").rstrip("/")
 @lru_cache(maxsize=1)
 def access_keys(team):
     return jwt.PyJWKClient(f"{team}/cdn-cgi/access/certs", timeout=5)
+
+
+def watchlist_owner():
+    raw_id = request.headers.get("X-Watchlist-ID", "").strip()
+    try:
+        return "browser:" + str(uuid.UUID(raw_id))
+    except (ValueError, AttributeError):
+        return None
 
 
 def verified_editor():
@@ -64,6 +74,11 @@ def verified_editor():
 @app.before_request
 def protect_shared_portfolio():
     if not PUBLIC_SHARED:
+        return
+    if request.path.startswith("/api/my-holdings") and request.method not in {"GET", "HEAD", "OPTIONS"}:
+        if not watchlist_owner():
+            return jsonify(error="缺少有效的瀏覽器清單識別碼。"), 400
+        g.write_allowed = True
         return
     managing = request.path == "/manage" or request.path.startswith("/manage/")
     if managing:
@@ -110,7 +125,15 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT, symbol TEXT NOT NULL, kind TEXT NOT NULL,
             signal_date TEXT NOT NULL, macd REAL NOT NULL, signal REAL NOT NULL,
             created_at TEXT NOT NULL, UNIQUE(symbol, kind, signal_date))""")
+        db.execute("""CREATE TABLE IF NOT EXISTS user_holdings (
+            owner TEXT NOT NULL, symbol TEXT NOT NULL, created_at TEXT NOT NULL,
+            PRIMARY KEY(owner, symbol))""")
         market_scan_store.init_schema(db)
+
+
+# `flask --app app run` imports the module instead of executing the `__main__`
+# block. Initialize every table during import so both launch methods work.
+init_db()
 
 
 def sync_sheet_holdings(force=False):
@@ -193,6 +216,101 @@ def index():
 def site_mode():
     can_edit = not PUBLIC_SHARED or g.get("editor", False) or (not PUBLIC_EDITING and verified_editor())
     return jsonify(publicShared=PUBLIC_SHARED, canEdit=can_edit)
+
+
+def personal_scan_payload(owner=None, as_of=None, symbols=None):
+    snapshot = market_scan_store.read_scan(DB_PATH, "all", as_of)
+    if snapshot.get("status") != "complete":
+        return snapshot
+    if symbols is None:
+        with connect() as db:
+            symbols = [row["symbol"] for row in db.execute(
+                "SELECT symbol FROM user_holdings WHERE owner=? ORDER BY symbol", (owner,)).fetchall()]
+    else:
+        symbols = sorted(set(symbols))
+    available = {row["symbol"]: row for row in snapshot["rows"]}
+    reasons = {item["symbol"]: item["reason"] for item in snapshot["missing"]}
+    session = date.fromisoformat(snapshot["as_of"])
+    missing = []
+    for symbol in symbols:
+        if symbol in available:
+            continue
+        cache_key = (symbol, session.isoformat())
+        cached = PERSONAL_SCAN_CACHE.get(cache_key)
+        if cached and time.monotonic() - cached[0] < 300:
+            available[symbol] = cached[1]
+            reasons.pop(symbol, None)
+            continue
+        try:
+            frame = yf.Ticker(symbol).history(period="2y", interval="1d", auto_adjust=True)
+            row, _ = market_scan_store._calculate(symbol, frame, session, db_path=DB_PATH)
+            PERSONAL_SCAN_CACHE[cache_key] = (time.monotonic(), row)
+            available[symbol] = row
+            reasons.pop(symbol, None)
+        except Exception as exc:
+            reasons[symbol] = market_error(exc) or "無法讀取日線資料"
+    rows = []
+    for rank, symbol in enumerate(symbols, start=1):
+        if symbol in available:
+            rows.append(dict(available[symbol], groups=["my"], group_ranks={"my": rank}))
+        else:
+            missing.append(dict(symbol=symbol, reason=reasons.get(symbol, "無法讀取日線資料"),
+                                groups=["my"], group_ranks={"my": rank}))
+    rows.sort(key=lambda row: (-row["avg_dollar_volume"], row["symbol"]))
+    summary = {"my": dict(label="我的持股", count=len(rows), target_count=len(symbols),
+                          missing_count=len(missing))}
+    return dict(snapshot, group="my", group_label="我的持股", groups=summary, rows=rows, missing=missing,
+                target_count=len(symbols), count=len(rows), missing_count=len(missing),
+                confirmation_pending=[s for s in snapshot.get("confirmation_pending", []) if s in symbols])
+
+
+@app.get("/api/watchlist-scan")
+def local_watchlist_scan():
+    try:
+        owner = watchlist_owner()
+        if not owner:
+            return jsonify(error="缺少有效的瀏覽器清單識別碼。"), 400
+        payload = personal_scan_payload(owner=owner, as_of=request.args.get("as_of"))
+    except ValueError as exc:
+        return jsonify(error=str(exc)), 400
+    except sqlite3.Error:
+        return jsonify(status="unavailable", error="暫時無法讀取已儲存的行情掃描。"), 503
+    return jsonify(payload), 200 if payload["status"] == "complete" else 503
+
+
+@app.route("/api/my-holdings", methods=["GET", "POST"])
+def personal_holdings():
+    owner = watchlist_owner()
+    if not owner:
+        return jsonify(error="缺少有效的瀏覽器清單識別碼。"), 400
+    if request.method == "GET":
+        with connect() as db:
+            rows = db.execute("SELECT symbol FROM user_holdings WHERE owner=? ORDER BY symbol",
+                              (owner,)).fetchall()
+        return jsonify([{"symbol": row["symbol"]} for row in rows])
+    try:
+        data = request.get_json(force=True)
+        symbol = valid_symbol(data.get("symbol") if isinstance(data, dict) else "")
+        with connect() as db:
+            db.execute("INSERT OR IGNORE INTO user_holdings(owner,symbol,created_at) VALUES(?,?,?)",
+                       (owner, symbol, datetime.now(timezone.utc).isoformat()))
+        return jsonify({"symbol": symbol})
+    except (ValueError, TypeError) as exc:
+        return jsonify(error=str(exc)), 400
+
+
+@app.delete("/api/my-holdings/<symbol>")
+def delete_personal_holding(symbol):
+    owner = watchlist_owner()
+    if not owner:
+        return jsonify(error="缺少有效的瀏覽器清單識別碼。"), 400
+    try:
+        symbol = valid_symbol(symbol)
+        with connect() as db:
+            db.execute("DELETE FROM user_holdings WHERE owner=? AND symbol=?", (owner, symbol))
+        return jsonify(ok=True)
+    except ValueError as exc:
+        return jsonify(error=str(exc)), 400
 
 
 @app.get("/healthz")
@@ -300,7 +418,14 @@ def fetch_macd(symbol):
 @app.get("/api/market-scan/latest")
 def market_scan():
     try:
-        payload = market_scan_store.read_scan(DB_PATH, request.args.get("group", "all"), request.args.get("as_of"))
+        group = request.args.get("group", "all")
+        if group == "my":
+            owner = watchlist_owner()
+            if not owner:
+                return jsonify(error="缺少有效的瀏覽器清單識別碼。"), 400
+            payload = personal_scan_payload(owner, request.args.get("as_of"))
+        else:
+            payload = market_scan_store.read_scan(DB_PATH, group, request.args.get("as_of"))
     except ValueError as exc:
         return jsonify(error=str(exc)), 400
     except sqlite3.Error:

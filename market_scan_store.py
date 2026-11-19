@@ -14,7 +14,8 @@ import yfinance as yf
 
 GROUP_LABELS = {
     "sp500": "S&P 500", "healthcare": "醫療保健", "financial": "金融",
-    "telecom": "電信營運商", "consumer": "消費品", "energy": "能源", "sheet": "USTICK",
+    "telecom": "電信營運商", "consumer": "消費品", "energy": "能源",
+    "sheet": "觀察清單", "etf": "ETF清單",
 }
 PRICE_WINDOW = 200
 EVENT_WINDOW = 3
@@ -40,6 +41,37 @@ def init_schema(db):
     db.execute("""CREATE TABLE IF NOT EXISTS market_bars (
         symbol TEXT NOT NULL, day TEXT NOT NULL, close REAL NOT NULL, volume REAL NOT NULL,
         PRIMARY KEY(symbol,day))""")
+    db.execute("""CREATE TABLE IF NOT EXISTS market_universe_lists (
+        list_key TEXT NOT NULL, symbol TEXT NOT NULL, position INTEGER NOT NULL,
+        updated_at TEXT NOT NULL, read_at TEXT, confirmed_at TEXT,
+        PRIMARY KEY(list_key,symbol))""")
+    columns = {row[1] for row in db.execute("PRAGMA table_info(market_universe_lists)")}
+    if "read_at" not in columns:
+        db.execute("ALTER TABLE market_universe_lists ADD COLUMN read_at TEXT")
+    if "confirmed_at" not in columns:
+        db.execute("ALTER TABLE market_universe_lists ADD COLUMN confirmed_at TEXT")
+
+
+def save_sheet_lists(db_path, groups, *, read_at=None):
+    """Replace the persisted Google Sheet lists with the scan's roster-read time."""
+    updated_at = read_at or _now()
+    with _db(db_path) as db:
+        init_schema(db)
+        for list_key in ("sheet", "etf"):
+            symbols = groups.get(list_key, [])
+            db.execute("DELETE FROM market_universe_lists WHERE list_key=?", (list_key,))
+            db.executemany(
+                "INSERT INTO market_universe_lists(list_key,symbol,position,updated_at,read_at) VALUES(?,?,?,?,?)",
+                [(list_key, symbol, position, updated_at, updated_at) for position, symbol in enumerate(symbols, 1)],
+            )
+
+
+def confirm_sheet_lists(db_path, confirmed_at):
+    """Stamp both sheet lists with the completion time of the shared confirmation scan."""
+    with _db(db_path) as db:
+        init_schema(db)
+        db.execute("UPDATE market_universe_lists SET confirmed_at=? WHERE list_key IN ('sheet','etf')",
+                   (confirmed_at,))
 
 
 @contextmanager
@@ -111,7 +143,7 @@ def _load_groups(loader):
             if not isinstance(symbols, (list, tuple)) or not all(isinstance(s, str) and s for s in symbols):
                 raise ValueError(name)
             groups[name] = list(dict.fromkeys(symbols))
-            if name != "sheet" and not groups[name]:
+            if name not in ("sheet", "etf") and not groups[name]:
                 raise ValueError(name)
         return groups
     except Exception as exc:
@@ -141,13 +173,26 @@ def _extend_confirmed_history(db_path, symbol, fresh, published_count):
         return fresh
     stored = pd.DataFrame.from_records(previous[::-1], columns=["day", "Close", "Volume"])
     stored.index = pd.to_datetime(stored.pop("day"))
-    overlap = stored.tail(len(fresh))
-    if not overlap.index.equals(fresh.index) or not np.allclose(
-            overlap["Close"], fresh["Close"], rtol=0, atol=0.00001):
+    overlap = stored.loc[stored.index.intersection(fresh.index)]
+    if overlap.empty or not np.allclose(
+            overlap["Close"], fresh.loc[overlap.index, "Close"], rtol=0, atol=0.00001):
         return fresh
-    # Use the complete fresh suffix, even when a value is missing. Validation
-    # below must reject an unusable new bar instead of substituting an old value.
-    return pd.concat([stored.iloc[:-len(fresh)], fresh])
+    # Keep the verified stored prefix and replace its overlapping tail with the
+    # fresh suffix. This also handles providers that return only the latest few
+    # bars, while rejecting a discontinuous or mismatching history.
+    prefix = stored.loc[stored.index < fresh.index[0]]
+    return pd.concat([prefix, fresh]).tail(PRICE_WINDOW)
+
+
+def _cached_history_count(db_path, symbol, session):
+    if not db_path or not Path(db_path).is_file():
+        return 0
+    with _db(db_path, readonly=True) as db:
+        if not db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='market_bars'").fetchone():
+            return 0
+        count = db.execute("SELECT COUNT(*) FROM market_bars WHERE symbol=? AND day<=?",
+                           (symbol, session.isoformat())).fetchone()[0]
+    return min(count, PRICE_WINDOW)
 
 def _calculate(symbol, frame, session, *, db_path=None, published_count=0):
     if frame is None or not {"Close", "Volume"}.issubset(frame.columns):
@@ -225,6 +270,8 @@ def _download_results(symbols, session, download, *, db_path, published_rows):
                 try:
                     # Retry the provider for full history before considering the stored prefix.
                     published = published_rows.get(symbol, {}) if size < 40 else {}
+                    if size < 40 and not published.get("bar_count"):
+                        published = {"bar_count": _cached_history_count(db_path, symbol, session)}
                     row, history = _calculate(symbol, _symbol_frame(frame, symbol, len(batch)), session,
                                               db_path=db_path, published_count=published.get("bar_count", 0))
                 except ValueError as exc:
@@ -279,13 +326,15 @@ def _run_locked(db_path, session, phase, loader, download):
         if saved and ((phase == "preliminary" and (confirmation or not missing)) or pending == []):
             return dict(status="skipped", phase=phase, as_of=day, count=len(rows), target_count=len(rows) + len(missing),
                         missing_count=len(missing))
+        attempt_started = _now()
         attempt = db.execute("INSERT INTO market_scan_attempts(session_date,started_at,status) VALUES(?,?,'running')",
-                             (day, _now())).lastrowid
+                             (day, attempt_started)).lastrowid
         if phase == "confirmation" and confirmation is None:
             db.execute("INSERT INTO market_scan_confirmations(session_date,first_attempt_id) VALUES(?,?)", (day, attempt))
     try:
         if groups is None:
             groups = _load_groups(loader)
+            save_sheet_lists(db_path, groups, read_at=attempt_started)
         targets = list(dict.fromkeys(s for symbols in groups.values() for s in symbols))
         with _db(db_path) as db:
             db.execute("UPDATE market_scan_attempts SET target_count=?, result_count=? WHERE id=?",
@@ -318,6 +367,8 @@ def _run_locked(db_path, session, phase, loader, download):
                            (json.dumps(list(missing)), day))
             db.execute("""UPDATE market_scan_attempts SET status='complete',finished_at=?,result_count=?,missing=?
                         WHERE id=?""", (finished, len(rows), json.dumps(missing), attempt))
+        if phase == "confirmation":
+            confirm_sheet_lists(db_path, finished)
         return dict(status="complete", phase=phase, as_of=day, count=len(rows), target_count=len(targets),
                     missing_count=len(unavailable), confirmation_pending_count=len(missing) if phase == "confirmation" else None)
     except Exception as exc:
@@ -347,6 +398,12 @@ def read_scan(db_path, group="all", as_of=None):
         attempt = db.execute("SELECT * FROM market_scan_attempts ORDER BY id DESC LIMIT 1").fetchone()
         confirmation = _confirmation(db, saved["session_date"]) if saved else None
         attempt_confirmation = _confirmation(db, attempt["session_date"]) if attempt else None
+        persisted_lists = {}
+        if db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='market_universe_lists'").fetchone():
+            for key in ("sheet", "etf"):
+                persisted_lists[key] = [row[0] for row in db.execute(
+                    "SELECT symbol FROM market_universe_lists WHERE list_key=? ORDER BY position", (key,)
+                )]
     latest_attempt = None
     if attempt:
         confirmation_attempt = attempt_confirmation and attempt["id"] >= attempt_confirmation["first_attempt_id"]
@@ -358,20 +415,28 @@ def read_scan(db_path, group="all", as_of=None):
     if not saved:
         return dict(status="pending", error="此交易日尚無已發布的掃描結果。", rows=[], latest_attempt=latest_attempt)
     groups, results, missing_reasons = (json.loads(saved[k]) for k in ("members", "results", "missing"))
+    # These two rosters are editable in Google Sheets and are stored separately
+    # so a newly imported list is visible before the next full market scan.
+    for key, roster in persisted_lists.items():
+        if roster:
+            groups[key] = roster
     membership, summaries = {}, {}
     for key, symbols in groups.items():
         for rank, symbol in enumerate(symbols, start=1):
             membership.setdefault(symbol, {})[key] = rank
         count = sum(symbol in results for symbol in symbols)
         summaries[key] = dict(label=GROUP_LABELS[key], count=count, target_count=len(symbols), missing_count=len(symbols)-count)
-    symbols = list(membership) if group == "all" else groups[group]
+    for key, label in GROUP_LABELS.items():
+        summaries.setdefault(key, dict(label=label, count=0, target_count=0, missing_count=0))
+    symbols = list(membership) if group == "all" else groups.get(group, [])
     rows, missing = [], []
     for symbol in symbols:
         ranks = membership[symbol]
         if symbol in results:
             rows.append(dict(results[symbol], groups=list(ranks), group_ranks=ranks))
         else:
-            missing.append(dict(symbol=symbol, reason=missing_reasons[symbol], groups=list(ranks), group_ranks=ranks))
+            reason = missing_reasons.get(symbol, "尚未有此交易日的掃描行情。")
+            missing.append(dict(symbol=symbol, reason=reason, groups=list(ranks), group_ranks=ranks))
     if group == "all":
         rows.sort(key=lambda row: (-row["avg_dollar_volume"], row["symbol"]))
     checked = confirmation is not None and confirmation["pending"] is not None

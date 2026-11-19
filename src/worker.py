@@ -123,7 +123,7 @@ class Default(WorkerEntrypoint):
             if path.startswith("/api/stock-detail/"):
                 symbol = valid_symbol(unquote(path.rsplit("/", 1)[-1]))
                 data = await self.stock_data(symbol)
-                return Response.json({"symbol": symbol, "date": data["points"][-1]["date"], "points": data["points"][-120:], "events": data["events"]})
+                return Response.json({"symbol": symbol, "date": data["points"][-1]["date"], "points": data["points"][-240:], "events": data["events"]})
             if path == "/api/market-scan" and method == "GET":
                 return Response.json(await self.market_scan(parsed))
             asset = await self.env.ASSETS.fetch(request)
@@ -181,9 +181,17 @@ class Default(WorkerEntrypoint):
         macd12, macd26 = ema(c, 12), ema(c, 26)
         macd = [a - b for a, b in zip(macd12, macd26)]
         signal = ema(macd, 9)
+        moving_averages = {}
+        for window in (5, 20, 60, 120):
+            moving_averages[window] = [
+                sum(c[i - window + 1:i + 1]) / window if i + 1 >= window else None
+                for i in range(len(c))
+            ]
         points = []
         for i, row in enumerate(rows):
-            points.append({**row, "macd": macd[i], "signal": signal[i], "histogram": macd[i] - signal[i]})
+            point = {**row, "macd": macd[i], "signal": signal[i], "histogram": macd[i] - signal[i]}
+            point.update({f"ma{window}": moving_averages[window][i] for window in moving_averages})
+            points.append(point)
         events = []
         for i in range(1, len(points)):
             prev, cur = points[i - 1], points[i]

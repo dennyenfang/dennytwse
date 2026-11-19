@@ -10,7 +10,7 @@ import urllib.request
 import yfinance as yf
 
 
-WATCHLIST_CSV = "https://docs.google.com/spreadsheets/d/16yDbTE_8iPUApTqiL3eZ_qRZnTwYricccNkztk2nqQM/export?format=csv&gid=0"
+MARKET_LISTS_CSV = "https://docs.google.com/spreadsheets/d/1miH6Rv7AS0xI8bxM-9X-kHTErM3SuPmx-55xh4-nj28/export?format=csv&gid=0"
 SP500_PAGE = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
 SP500_MIRROR = "https://raw.githubusercontent.com/datasets/s-and-p-500-companies/main/data/constituents.csv"
 
@@ -30,12 +30,12 @@ def yahoo_symbol(value):
     return re.sub(r"^([A-Z]+)\.([AB])$", r"\1-\2", symbol)
 
 
-def watchlist_symbols(source):
+def symbols_from_column(source, column_name, list_name):
     reader = csv.DictReader(io.StringIO(source))
     fields = {name.strip().casefold(): name for name in reader.fieldnames or []}
-    column = next((fields[k] for k in ("代號", "股票代號", "ticker", "symbol") if k in fields), None)
+    column = fields.get(column_name.strip().casefold())
     if column is None:
-        raise ValueError("USTICK 缺少股票代號欄")
+        raise ValueError(f"Google Sheet 缺少「{column_name}」欄")
     symbols = []
     for number, row in enumerate(reader, start=2):
         value = (row.get(column) or "").strip()
@@ -43,8 +43,17 @@ def watchlist_symbols(source):
             try:
                 symbols.append(yahoo_symbol(value))
             except ValueError as exc:
-                raise ValueError(f"USTICK 第 {number} 列的股票代號無法辨識") from exc
+                raise ValueError(f"{list_name}第 {number} 列的股票代號無法辨識") from exc
     return list(dict.fromkeys(symbols))
+
+
+def watchlist_symbols(source, list_name="觀察清單"):
+    reader = csv.DictReader(io.StringIO(source))
+    fields = {name.strip().casefold(): name for name in reader.fieldnames or []}
+    column = next((fields[k] for k in ("代號", "股票代號", "ticker", "symbol") if k in fields), None)
+    if column is None:
+        raise ValueError(f"{list_name}缺少股票代號欄")
+    return symbols_from_column(source, column, list_name)
 
 
 def validate_sp500(values):
@@ -80,6 +89,7 @@ def ranked_stocks(field, values, limit):
 
 
 def load_universe():
+    market_lists = fetch_text(MARKET_LISTS_CSV)
     return {
         "sp500": sp500_symbols(),
         "healthcare": ranked_stocks("sector", ["Healthcare"], 50),
@@ -87,5 +97,6 @@ def load_universe():
         "telecom": ranked_stocks("industry", ["Telecom Services"], 10),
         "consumer": ranked_stocks("sector", ["Consumer Defensive", "Consumer Cyclical"], 50),
         "energy": ranked_stocks("sector", ["Energy"], 20),
-        "sheet": watchlist_symbols(fetch_text(WATCHLIST_CSV)),
+        "sheet": symbols_from_column(market_lists, "美股觀察名單", "觀察清單"),
+        "etf": symbols_from_column(market_lists, "美股ETF名單", "ETF清單"),
     }

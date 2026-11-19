@@ -47,7 +47,13 @@ function ema(values, span) {
 function enrich(points) {
   const closes = points.map(p => p.close), e12 = ema(closes,12), e26 = ema(closes,26);
   const macd = closes.map((_,i)=>e12[i]-e26[i]), signal = ema(macd,9);
-  return points.map((p,i)=>({...p,macd:macd[i],signal:signal[i],histogram:macd[i]-signal[i]}));
+  const averages = Object.fromEntries([5,20,60,120].map(window=>[
+    `ma${window}`, closes.map((_,i)=>i+1>=window
+      ? closes.slice(i-window+1,i+1).reduce((sum,value)=>sum+value,0)/window
+      : null)
+  ]));
+  return points.map((p,i)=>({...p,macd:macd[i],signal:signal[i],histogram:macd[i]-signal[i],
+    ma5:averages.ma5[i],ma20:averages.ma20[i],ma60:averages.ma60[i],ma120:averages.ma120[i]}));
 }
 async function history(symbol) {
   symbol = validSymbol(symbol);
@@ -79,7 +85,7 @@ function events(points) {
   return rows;
 }
 async function detail(symbol) {
-  const points=(await history(symbol)).slice(-120); return {symbol:validSymbol(symbol),date:points.at(-1)?.date||"",points,events:events(points).reverse()};
+  const points=(await history(symbol)).slice(-240); return {symbol:validSymbol(symbol),date:points.at(-1)?.date||"",points,events:events(points).reverse()};
 }
 async function quoteHolding(holding) {
   const points=await history(holding.symbol), latest=points.at(-1), previous=points.at(-2);
