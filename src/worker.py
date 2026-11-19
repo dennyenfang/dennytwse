@@ -284,15 +284,20 @@ class Default(WorkerEntrypoint):
         for symbol in symbols[offset:offset + limit]:
             try:
                 points = (await self.stock_data(symbol))["points"]
-                if len(points) < 22: continue
+                if len(points) < 35: continue
                 current, previous = points[-1], points[-2]
-                vol_avg = sum(p["volume"] for p in points[-21:-1]) / 20
-                vol_pct = (current["volume"] / vol_avg - 1) * 100 if vol_avg else 0
+                recent_volumes = points[-5:]
+                baseline_volumes = points[-35:-5]
+                baseline_volume = sum(p["volume"] for p in baseline_volumes) / 30
+                max_volume_day = max(recent_volumes, key=lambda p: p["volume"])
+                vol_pct = (max_volume_day["volume"] / baseline_volume - 1) * 100 if baseline_volume else 0
+                spike = baseline_volume > 0 and max_volume_day["volume"] > 1.5 * baseline_volume
                 avg_dollar = sum(p["close"] * p["volume"] for p in points[-20:]) / 20
                 rows.append({"symbol": symbol, "close": current["close"], "change_pct": (current["close"] / previous["close"] - 1) * 100 if previous["close"] else 0,
                     "golden": latest_event(points, "golden"), "positive": latest_event(points, "positive"), "negative": latest_event(points, "negative"), "death": latest_event(points, "death"),
-                    "volume": current["volume"], "vol_pct": vol_pct, "avg_dollar_volume": avg_dollar, "spike": vol_pct >= 50, "macd": current["macd"], "signal": current["signal"], "date": current["date"]})
+                    "volume": current["volume"], "vol_pct": vol_pct, "avg_dollar_volume": avg_dollar, "spike": spike,
+                    "spike_dates": [max_volume_day["date"]] if spike else [], "macd": current["macd"], "signal": current["signal"], "date": current["date"]})
             except Exception:
                 continue
         label = GROUPS[group][0]
-        return {"group": group, "group_label": label, "as_of": max((r["date"] for r in rows), default=""), "rows": rows, "count": len(rows), "total": len(symbols), "offset": offset, "next_offset": offset + limit if offset + limit < len(symbols) else None, "volume_threshold": 1.5}
+        return {"group": group, "group_label": label, "as_of": max((r["date"] for r in rows), default=""), "rows": rows, "count": len(rows), "total": len(symbols), "offset": offset, "next_offset": offset + limit if offset + limit < len(symbols) else None, "volume_threshold": 1.5, "volume_window": 5, "volume_baseline_window": 30}

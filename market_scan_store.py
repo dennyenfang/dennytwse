@@ -18,6 +18,8 @@ GROUP_LABELS = {
 }
 PRICE_WINDOW = 200
 EVENT_WINDOW = 3
+VOLUME_WINDOW = 5
+VOLUME_BASELINE_WINDOW = 30
 
 
 class ScanUnavailable(RuntimeError):
@@ -118,10 +120,11 @@ def _calculate(symbol, frame, session):
         raise ValueError("無可用日線")
     if data.index[-1].date() != session:
         raise ValueError(f"缺少當日收盤，最近資料為 {data.index[-1].date().isoformat()}")
-    if len(data) < 35:
-        raise ValueError(f"日線不足 35 根（目前 {len(data)} 根）")
+    required_volume_bars = VOLUME_WINDOW + VOLUME_BASELINE_WINDOW
+    if len(data) < required_volume_bars:
+        raise ValueError(f"日線不足 {required_volume_bars} 根（目前 {len(data)} 根）")
     close, volume = data["Close"], data["Volume"]
-    if (close <= 0).any() or volume.tail(33).isna().any() or (volume.tail(33) < 0).any():
+    if (close <= 0).any() or volume.tail(required_volume_bars).isna().any() or (volume.tail(required_volume_bars) < 0).any():
         raise ValueError("價格或成交量不完整")
     macd = close.ewm(span=12, adjust=False).mean() - close.ewm(span=26, adjust=False).mean()
     signal = macd.ewm(span=9, adjust=False).mean()
@@ -137,13 +140,14 @@ def _calculate(symbol, frame, session):
         recent = condition.tail(EVENT_WINDOW)
         days = recent.index[recent]
         events[kind] = days[-1].date().isoformat() if len(days) else ""
-    # Compare each of the latest three sessions against the 30 sessions before them.
-    baseline_volume = float(volume.iloc[-33:-3].mean())
+    # Compare the highest-volume day in the latest five sessions to the prior 30-session average.
+    baseline_volume = float(volume.iloc[-required_volume_bars:-VOLUME_WINDOW].mean())
     last_volume = float(volume.iloc[-1])
-    recent_volumes = volume.iloc[-3:]
-    volume_pct = (float(recent_volumes.max()) / baseline_volume - 1) * 100 if baseline_volume else 0.0
-    spike_dates = [index.date().isoformat() for index, value in recent_volumes.items()
-                   if baseline_volume and float(value) > 1.5 * baseline_volume]
+    recent_volumes = volume.iloc[-VOLUME_WINDOW:]
+    highest_volume_date = recent_volumes.idxmax()
+    highest_volume = float(recent_volumes.loc[highest_volume_date])
+    volume_pct = (highest_volume / baseline_volume - 1) * 100 if baseline_volume else 0.0
+    spike_dates = [highest_volume_date.date().isoformat()] if baseline_volume and highest_volume > 1.5 * baseline_volume else []
     row = dict(symbol=symbol, date=session.isoformat(), close=float(close.iloc[-1]),
                change_pct=float((close.iloc[-1] / close.iloc[-2] - 1) * 100),
                volume=last_volume, vol_pct=volume_pct, spike=bool(spike_dates), spike_dates=spike_dates,
@@ -305,4 +309,5 @@ def read_scan(db_path, group="all", as_of=None):
     return dict(status="complete", group=group, group_label=GROUP_LABELS.get(group, "全部"), groups=summaries,
                 as_of=saved["session_date"], published_at=saved["published_at"], latest_attempt=latest_attempt,
                 target_count=len(symbols), count=len(rows), missing_count=len(missing), missing=missing, rows=rows,
-                volume_threshold=1.5, price_window=PRICE_WINDOW, event_window=EVENT_WINDOW)
+                volume_threshold=1.5, volume_window=VOLUME_WINDOW,
+                volume_baseline_window=VOLUME_BASELINE_WINDOW, price_window=PRICE_WINDOW, event_window=EVENT_WINDOW)

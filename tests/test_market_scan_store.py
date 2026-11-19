@@ -30,7 +30,7 @@ class MarketScanTest(unittest.TestCase):
             close = np.linspace(100, 74, len(dates))
             close[-1] = 250.0
             volume = np.full(len(dates), 1_000.0)
-            volume[-1] = 1500.0
+            volume[-1] = 1501.0
             values[ticker] = pd.DataFrame({"Close": close, "Volume": volume}, index=dates)
         return pd.concat(values, axis=1) if values else pd.DataFrame()
 
@@ -53,7 +53,7 @@ class MarketScanTest(unittest.TestCase):
         self.assertEqual(first["group_ranks"]["financial"], 2)
         self.assertEqual(first["bar_count"], 200)
         self.assertTrue(first["spike"])
-        self.assertEqual(first["vol_pct"], 50.0)
+        self.assertEqual(first["vol_pct"], 50.1)
         self.assertEqual(first["golden"], self.day.isoformat())
         self.assertEqual(first["positive"], self.day.isoformat())
         subset = read_scan(self.path, "financial")
