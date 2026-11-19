@@ -407,17 +407,23 @@ def stock_detail(symbol):
         frame = yf.Ticker(symbol).history(period="1y", interval="1d", auto_adjust=True)
         if frame.empty or not {"Open", "High", "Low", "Close", "Volume"}.issubset(frame.columns):
             raise ValueError("找不到完整的日線 OHLCV 資料。")
-        frame = frame.loc[:session.isoformat()].dropna(subset=["Close"]).tail(market_scan_store.PRICE_WINDOW)
+        frame = frame.loc[:session.isoformat()].dropna(subset=["Close"]).tail(240)
         close = frame["Close"]
         macd = close.ewm(span=12, adjust=False).mean() - close.ewm(span=26, adjust=False).mean()
         signal = macd.ewm(span=9, adjust=False).mean()
-        frame = frame.tail(120).copy()
+        for window in (5, 20, 60, 120):
+            frame[f"MA{window}"] = close.rolling(window).mean()
+        frame = frame.tail(240).copy()
         frame["MACD"] = macd.reindex(frame.index)
         frame["Signal"] = signal.reindex(frame.index)
         frame["Histogram"] = frame["MACD"] - frame["Signal"]
         points = [{"date": idx.date().isoformat(), "open": float(row["Open"]), "high": float(row["High"]),
             "low": float(row["Low"]), "close": float(row["Close"]), "volume": float(row["Volume"]),
-            "macd": float(row["MACD"]), "signal": float(row["Signal"]), "histogram": float(row["Histogram"])}
+            "macd": float(row["MACD"]), "signal": float(row["Signal"]), "histogram": float(row["Histogram"]),
+            "ma5": float(row["MA5"]) if pd.notna(row["MA5"]) else None,
+            "ma20": float(row["MA20"]) if pd.notna(row["MA20"]) else None,
+            "ma60": float(row["MA60"]) if pd.notna(row["MA60"]) else None,
+            "ma120": float(row["MA120"]) if pd.notna(row["MA120"]) else None}
             for idx, row in frame.iterrows()]
         events = []
         for i in range(1, len(points)):
