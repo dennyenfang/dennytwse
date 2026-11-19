@@ -5,7 +5,9 @@ import io
 import os
 import re
 import urllib.parse
-import urllib.request
+import json
+
+from http_data import get_bytes
 
 
 SHEET_ID = os.environ.get("WATCHLIST_SHEET_ID", "1miH6Rv7AS0xI8bxM-9X-kHTErM3SuPmx-55xh4-nj28")
@@ -15,18 +17,13 @@ TPEX_DAILY = "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quot
 
 
 def fetch_json(url):
-    request = urllib.request.Request(url, headers={"User-Agent": "DennyTWSE/1.0"})
-    with urllib.request.urlopen(request, timeout=30) as response:
-        import json
-        return json.load(response)
+    return json.loads(get_bytes(url, timeout=30))
 
 
 def fetch_sheet_column_c():
     url = (f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?"
            f"{urllib.parse.urlencode({'format': 'csv', 'gid': SHEET_GID})}")
-    request = urllib.request.Request(url, headers={"User-Agent": "DennyTWSE/1.0"})
-    with urllib.request.urlopen(request, timeout=25) as response:
-        source = response.read().decode("utf-8-sig")
+    source = get_bytes(url, timeout=25).decode("utf-8-sig")
     symbols = []
     for row in csv.reader(io.StringIO(source)):
         if len(row) < 3:

@@ -4,11 +4,11 @@ import json
 import re
 import time
 import urllib.parse
-import urllib.request
 from datetime import date
 
 import pandas as pd
 import exchange_calendars as xcals
+from http_data import get_bytes
 
 
 TWSE_MONTH = "https://www.twse.com.tw/rwd/zh/afterTrading/STOCK_DAY"
@@ -19,9 +19,7 @@ _SCAN_CACHE = {}
 
 
 def _get_json(url):
-    request = urllib.request.Request(url, headers={"User-Agent": "DennyTWSE/1.0"})
-    with urllib.request.urlopen(request, timeout=25) as response:
-        return json.load(response)
+    return json.loads(get_bytes(url, timeout=25))
 
 
 def _month_starts(month_count=14):
