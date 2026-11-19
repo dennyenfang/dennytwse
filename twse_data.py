@@ -175,7 +175,7 @@ def download(symbols, *, start=None, end=None, **kwargs):
         all_frames = cached[1]
     else:
         sessions = xcals.get_calendar("XTAI").sessions_in_range(
-            pd.Timestamp(start_day, tz="UTC"), pd.Timestamp(end_day, tz="UTC"))
+            pd.Timestamp(start_day), pd.Timestamp(end_day))
         collected = {}
         for session in sessions:
             day = session.date()
