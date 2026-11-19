@@ -220,10 +220,11 @@
       ticker.textContent = row.symbol;
       ticker.setAttribute('aria-label', `查看 ${row.symbol} 詳細資料`);
       tr.insertCell().append(ticker);
+      const spikeDate = row.spike_dates?.at(-1) || '';
       const fields = [
         [money(row.close), ''], [pct(row.change_pct), row.change_pct >= 0 ? 'positive' : 'negative'],
         [row.golden, 'sigbull'], [row.positive, 'sigbull'], [row.negative, 'sigbear'], [row.death, 'sigbear'],
-        [pct(row.vol_pct), row.spike ? 'volhot' : '']
+        [spikeDate, spikeDate ? 'volhot' : '']
       ];
       for (const [value, style] of fields) {
         const cell = tr.insertCell();
@@ -393,7 +394,7 @@
         button.classList.toggle('active', selected);
         button.setAttribute('aria-pressed', String(selected));
       }
-      marketSort = key === 'spike' ? 'vol_pct' : 'avg_dollar_volume';
+      marketSort = key === 'spike' ? 'spike_date' : 'avg_dollar_volume';
       marketDesc = true;
       drawMarketRows();
     });
