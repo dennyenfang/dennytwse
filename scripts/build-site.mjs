@@ -8,6 +8,7 @@ const assets = {
   "__INDEX_HTML__": await readFile(path.join(root, "static", "index.html"), "utf8"),
   "__MANIFEST__": await readFile(path.join(root, "static", "manifest.webmanifest"), "utf8"),
   "__ICON__": await readFile(path.join(root, "static", "icon.svg"), "utf8"),
+  "__FAVICON__": await readFile(path.join(root, "static", "favicon.ico"), "base64"),
   "__SERVICE_WORKER__": await readFile(path.join(root, "static", "sw.js"), "utf8")
 };
 

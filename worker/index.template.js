@@ -1,6 +1,7 @@
 const INDEX_HTML = __INDEX_HTML__;
 const MANIFEST = __MANIFEST__;
 const ICON = __ICON__;
+const FAVICON = Uint8Array.from(atob(__FAVICON__), char => char.charCodeAt(0));
 const SERVICE_WORKER = __SERVICE_WORKER__;
 
 const GROUPS = {
@@ -140,6 +141,7 @@ export default {
       if(url.pathname.startsWith("/api/")) return await api(request,url);
       if(url.pathname==="/manifest.webmanifest")return new Response(MANIFEST,{headers:{"content-type":"application/manifest+json"}});
       if(url.pathname==="/icon.svg")return new Response(ICON,{headers:{"content-type":"image/svg+xml"}});
+      if(url.pathname==="/favicon.ico")return new Response(FAVICON,{headers:{"content-type":"image/x-icon"}});
       if(url.pathname==="/sw.js")return new Response(SERVICE_WORKER,{headers:{"content-type":"application/javascript","service-worker-allowed":"/"}});
       return new Response(INDEX_HTML,{headers:{"content-type":"text/html; charset=utf-8","cache-control":"no-cache"}});
     } catch(error){return json({error:error?.message||"Unexpected error"},500);}

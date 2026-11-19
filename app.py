@@ -215,6 +215,11 @@ def icon():
     return send_from_directory(ROOT / "static", "icon.svg")
 
 
+@app.get("/favicon.ico")
+def favicon():
+    return send_from_directory(ROOT / "static", "favicon.ico", mimetype="image/x-icon")
+
+
 @app.get("/sw.js")
 def service_worker():
     response = send_from_directory(ROOT / "static", "sw.js")
