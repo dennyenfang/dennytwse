@@ -82,6 +82,32 @@ class MarketScanTest(unittest.TestCase):
         self.assertEqual(retry.call_args.args[0], ["CCC"])
         self.assertEqual(read_scan(self.path, "sheet")["count"], 2)
 
+    def test_sector_with_four_stale_tickers_still_publishes_and_reports_them(self):
+        telecom = [f"TEL{i}" for i in range(10)]
+        self.groups["telecom"] = telecom
+        stale = telecom[6:]
+        def partly_stale(tickers, **opts):
+            frame = self.download(tickers, **opts)
+            for ticker in set(tickers).intersection(stale):
+                frame.loc[frame.index[-1], (ticker, "Close")] = np.nan
+            return frame
+        result = self.run_day(downloader=partly_stale)
+        self.assertEqual(result["status"], "complete")
+        sector = read_scan(self.path, "telecom")
+        self.assertEqual((sector["count"], sector["target_count"]), (6, 10))
+        self.assertEqual([item["symbol"] for item in sector["missing"]], stale)
+        self.assertTrue(all("2026-11-17" in item["reason"] for item in sector["missing"]))
+        self.assertEqual(read_scan(self.path, "sp500")["missing_count"], 0)
+
+    def test_first_of_120_signal_dates_uses_preceding_bar(self):
+        dates = pd.bdate_range(end=self.day, periods=200)
+        frame = pd.DataFrame({"Close": np.r_[np.full(80, 100.0), 100.0 + np.arange(1, 121)],
+                              "Volume": 1000}, index=dates)
+        self.run_day(downloader=lambda symbols, **opts: pd.concat({s: frame for s in symbols}, axis=1))
+        row = read_scan(self.path)["rows"][0]
+        self.assertEqual(row["golden"], dates[80].date().isoformat())
+        self.assertEqual(row["positive"], dates[80].date().isoformat())
+
     def test_scheduled_retry_budget_starts_after_first_publication(self):
         self.assertTrue(needs_scheduled_scan(self.path, self.day))
         with self.assertRaises(ScanUnavailable):

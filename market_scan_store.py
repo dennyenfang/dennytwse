@@ -125,16 +125,17 @@ def _calculate(symbol, frame, session):
         raise ValueError("價格或成交量不完整")
     macd = close.ewm(span=12, adjust=False).mean() - close.ewm(span=26, adjust=False).mean()
     signal = macd.ewm(span=9, adjust=False).mean()
-    m, s = macd.tail(EVENT_WINDOW), signal.tail(EVENT_WINDOW)
+    previous_macd, previous_signal = macd.shift(), signal.shift()
     crosses = {
-        "golden": (m.shift() <= s.shift()) & (m > s),
-        "death": (m.shift() >= s.shift()) & (m < s),
-        "positive": (m.shift() <= 0) & (m > 0),
-        "negative": (m.shift() >= 0) & (m < 0),
+        "golden": (previous_macd <= previous_signal) & (macd > signal),
+        "death": (previous_macd >= previous_signal) & (macd < signal),
+        "positive": (previous_macd <= 0) & (macd > 0),
+        "negative": (previous_macd >= 0) & (macd < 0),
     }
     events = {}
     for kind, condition in crosses.items():
-        days = condition.index[condition]
+        recent = condition.tail(EVENT_WINDOW)
+        days = recent.index[recent]
         events[kind] = days[-1].date().isoformat() if len(days) else ""
     previous_volume = float(volume.iloc[-21:-1].mean())
     last_volume = float(volume.iloc[-1])
@@ -142,8 +143,8 @@ def _calculate(symbol, frame, session):
     row = dict(symbol=symbol, date=session.isoformat(), close=float(close.iloc[-1]),
                change_pct=float((close.iloc[-1] / close.iloc[-2] - 1) * 100),
                volume=last_volume, vol_pct=volume_pct, spike=bool(previous_volume and last_volume >= 1.5 * previous_volume),
-               avg_dollar_volume=float((close * volume).tail(20).mean()), macd=float(m.iloc[-1]),
-               signal=float(s.iloc[-1]), bar_count=len(close), **events)
+               avg_dollar_volume=float((close * volume).tail(20).mean()), macd=float(macd.iloc[-1]),
+               signal=float(signal.iloc[-1]), bar_count=len(close), **events)
     if any(not math.isfinite(value) for value in row.values() if isinstance(value, float)):
         raise ValueError("無法計算有限的行情指標")
     bars = [(symbol, index.date().isoformat(), float(price), float(turnover))
@@ -182,15 +183,11 @@ def _download_results(symbols, session, download):
 
 
 def _coverage_failure(groups, rows):
-    incomplete = []
-    for group, symbols in groups.items():
-        if group == "sheet":
-            continue
-        successes = sum(s in rows for s in symbols)
-        required = 0.90 if group == "sp500" else 0.70
-        if successes < math.ceil(required * len(symbols)):
-            incomplete.append(f"{GROUP_LABELS[group]} {successes}/{len(symbols)}")
-    return "當日行情覆蓋不足：" + "、".join(incomplete) if incomplete else None
+    benchmark = groups["sp500"]
+    available = sum(symbol in rows for symbol in benchmark)
+    if available < math.ceil(0.90 * len(benchmark)):
+        return f"當日行情覆蓋不足：S&P 500 {available}/{len(benchmark)}"
+    return None
 
 
 def run_scan(db_path, session_date, *, load_universe=None, download=None):
