@@ -4,6 +4,16 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#101b2d"><meta name="description" content="美股持股與 MACD 訊號追蹤">
   <meta name="apple-mobile-web-app-title" content="Denny888">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://denny888.usdollar.win/">
+  <meta property="og:title" content="Denny888">
+  <meta property="og:image" content="https://denny888.usdollar.win/icons/radar-512.png">
+  <meta property="og:image:width" content="512">
+  <meta property="og:image:height" content="512">
+  <meta property="og:image:alt" content="Denny888 綠色雷達">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:image" content="https://denny888.usdollar.win/icons/radar-512.png">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" type="image/x-icon" sizes="16x16 24x24 32x32 48x48 64x64 128x128 256x256" href="/favicon.ico?v=2">
   <title>Denny888</title>
@@ -633,7 +643,7 @@
     }
     $('#chartSymbol').addEventListener('change',e=>loadChart(e.target.value));window.addEventListener('resize',()=>drawChart(chartData));
     async function renderAlerts(){try{const rows=await api('/api/alerts');$('#alerts').innerHTML=rows.length?rows.map(a=>`<div class="alertitem"><div class="alerticon">${a.kind==='golden_cross'?'↗':a.kind==='death_cross'?'↘':a.kind==='macd_positive'?'＋':'−'}</div><div><strong>${a.symbol} · ${a.label}</strong><small>MACD ${Number(a.macd).toFixed(3)}　訊號 ${Number(a.signal).toFixed(3)}</small></div><span class="alertdate">${a.date}</span></div>`).join(''):'<div class="empty">目前沒有訊號</div>'}catch{}}
-    async function scan(endpoint = publicShared && canEdit ? '/manage/api/scan' : '/api/scan'){try{const result=await api(endpoint,{method:'POST'});for(const a of result.alerts){toast(`${a.symbol}｜${a.label}`);if('serviceWorker'in navigator&&'Notification'in window&&Notification.permission==='granted'){const reg=await navigator.serviceWorker.ready;reg.showNotification(`${a.symbol}｜${a.label}`,{body:`${a.date} · MACD ${a.macd}，訊號 ${a.signal}`,icon:'/icon.svg',tag:`${a.symbol}-${a.kind}-${a.date}`})}}if(result.errors.length)$('#formError').textContent=result.errors.map(e=>`${e.symbol}：${e.error}`).join('；');await renderAlerts()}catch(e){$('#status').textContent=`掃描失敗：${e.message}`}}
+    async function scan(endpoint = publicShared && canEdit ? '/manage/api/scan' : '/api/scan'){try{const result=await api(endpoint,{method:'POST'});for(const a of result.alerts){toast(`${a.symbol}｜${a.label}`);if('serviceWorker'in navigator&&'Notification'in window&&Notification.permission==='granted'){const reg=await navigator.serviceWorker.ready;reg.showNotification(`${a.symbol}｜${a.label}`,{body:`${a.date} · MACD ${a.macd}，訊號 ${a.signal}`,icon:'/icons/radar-192.png',tag:`${a.symbol}-${a.kind}-${a.date}`})}}if(result.errors.length)$('#formError').textContent=result.errors.map(e=>`${e.symbol}：${e.error}`).join('；');await renderAlerts()}catch(e){$('#status').textContent=`掃描失敗：${e.message}`}}
     holdingForm.addEventListener('submit', event => {
       event.preventDefault();
       const holding = {symbol:$('#symbol').value, shares:$('#shares').value, cost:$('#cost').value};

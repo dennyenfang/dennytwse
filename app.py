@@ -220,6 +220,16 @@ def favicon():
     return send_from_directory(ROOT / "static", "favicon.ico", mimetype="image/x-icon")
 
 
+@app.get("/apple-touch-icon.png")
+def apple_touch_icon():
+    return send_from_directory(ROOT / "static", "apple-touch-icon.png")
+
+
+@app.get("/icons/<filename>")
+def app_icon(filename):
+    return send_from_directory(ROOT / "static" / "icons", filename)
+
+
 @app.get("/sw.js")
 def service_worker():
     response = send_from_directory(ROOT / "static", "sw.js")

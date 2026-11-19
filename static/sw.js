@@ -1,7 +1,11 @@
-const CACHE = 'macd-pwa-v6';
+const CACHE = 'macd-pwa-v7';
 const ASSETS = new Map([
   ['/manifest.webmanifest', 'application/manifest+json'],
-  ['/icon.svg', 'image/svg+xml']
+  ['/icon.svg', 'image/svg+xml'],
+  ['/apple-touch-icon.png', 'image/png'],
+  ['/icons/radar-192.png', 'image/png'],
+  ['/icons/radar-512.png', 'image/png'],
+  ['/icons/radar-maskable-512.png', 'image/png']
 ]);
 
 self.addEventListener('install', event => event.waitUntil(self.skipWaiting()));
