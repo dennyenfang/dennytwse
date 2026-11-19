@@ -30,7 +30,6 @@
     .scan-no-match { color:#ff6161; font-weight:700; animation:scan-fade 2.4s ease-in-out infinite; }
     @keyframes scan-fade { 0%,100% { opacity:1; } 50% { opacity:.35; } }
     @media (prefers-reduced-motion:reduce) { .scan-no-match { animation:none; } }
-    #sharedEditHelp{display:block}
     [hidden]{display:none!important}
     .title-row { display:flex; align-items:center; gap:10px; }
     .remark-trigger { padding:3px 10px; min-height:30px; font-size:13px; font-weight:650; color:var(--blue); }
@@ -45,6 +44,21 @@
     .remark-links dt { color:var(--muted); font-size:13px; }
     .remark-links dd { margin:2px 0 0; }
     .remark-links a { color:var(--blue); text-underline-offset:3px; overflow-wrap:anywhere; }
+    #manageDialog { width:min(640px, calc(100% - 24px)); overscroll-behavior:contain; }
+    #manageDialog.inline-manager { display:block; position:static; max-height:none; margin:16px auto; }
+    #manageDialog fieldset { min-width:0; margin:0; padding:0; border:0; }
+    #manageDialog .form { margin:16px 0; }
+    #manageDialog .field { min-width:0; }
+    #manageDialog table { min-width:0; }
+    #manageDialog td { overflow-wrap:anywhere; }
+    #manageDialog .row-actions { white-space:nowrap; }
+    #manageDialog .row-actions button { padding:4px 6px; font-size:13px; }
+    #manageFallback { color:var(--blue); }
+    @media (max-width:480px) {
+      #manageDialog .remark-content { padding:14px; }
+      #manageDialog td, #manageDialog th { padding:8px 3px; }
+      #manageDialog .row-actions { white-space:normal; }
+    }
     @media (max-width:520px) { .top { flex-wrap:wrap; gap:8px 12px; } .top .actions { margin-left:auto; } .title-row { gap:7px; } }
   </style>
 </head>
@@ -61,7 +75,7 @@
           </div>
         </div>
       </div>
-      <div class="actions"><a id="manageLink" class="button iconbtn" href="/manage/" hidden>管理持股</a><button id="notifyBtn" class="iconbtn" title="開啟通知">♢ <span class="label">開啟通知</span></button><button id="refreshBtn" class="iconbtn" title="同步持股並更新行情" hidden>↻ <span class="label">同步</span></button></div>
+      <div class="actions"><a id="manageLink" class="button iconbtn" href="/manage/" aria-haspopup="dialog" aria-controls="manageDialog" hidden>管理持股</a><button id="notifyBtn" class="iconbtn" title="開啟通知">♢ <span class="label">開啟通知</span></button></div>
     </header>
     <dialog id="remarkDialog" class="remark-dialog" aria-labelledby="remarkTitle">
       <div class="remark-content">
@@ -75,6 +89,28 @@
           <div><dt>股票觀察清單</dt><dd><a href="https://docs.google.com/spreadsheets/d/16yDbTE_8iPUApTqiL3eZ_qRZnTwYricccNkztk2nqQM/edit?usp=sharing" target="_blank" rel="noopener noreferrer">USTICK（Google Sheet）</a></dd></div>
           <div><dt>日線行情資料</dt><dd>正式站透過 <a href="https://ranaroussi.github.io/yfinance/" target="_blank" rel="noopener noreferrer">yfinance</a> 取得 <a href="https://finance.yahoo.com/" target="_blank" rel="noopener noreferrer">Yahoo Finance</a> 行情。</dd></div>
         </dl>
+      </div>
+    </dialog>
+    <dialog id="manageDialog" class="remark-dialog" aria-labelledby="manageTitle">
+      <div class="remark-content">
+        <div class="remark-heading">
+          <h2 id="manageTitle">管理持股</h2>
+          <form method="dialog"><button class="remark-close" aria-label="關閉管理持股" type="submit" autofocus>×</button></form>
+        </div>
+        <p id="sharedEditHelp" class="sub" hidden>這份持股清單由所有訪客共用，儲存後大家都能看到變更。</p>
+        <p id="manageStatus" class="sub" role="status"></p>
+        <a id="manageFallback" href="/manage/" hidden>前往管理頁面</a>
+        <fieldset id="manageControls" hidden disabled>
+          <form id="holdingForm" class="form" autocomplete="off">
+            <div class="field"><label for="symbol">美股代號</label><input id="symbol" placeholder="例如 AAPL" maxlength="20" required></div>
+            <div class="field"><label for="shares">股數</label><input id="shares" type="number" min="0.000001" step="any" placeholder="10" required></div>
+            <div class="field"><label for="cost">平均持有成本（USD）</label><input id="cost" type="number" min="0" step="any" placeholder="185.50" required></div>
+            <button class="primary" type="submit">新增／更新</button>
+          </form>
+          <div class="tablewrap"><table aria-label="可編輯的持股"><thead><tr><th>代號</th><th>股數</th><th>平均成本（USD）</th><th>操作</th></tr></thead><tbody id="manageRows"></tbody></table></div>
+          <button id="refreshBtn" type="button">同步持股與行情</button>
+          <small class="sub">從 Google Sheet 匯入時，未填股數預設為 5 股，未填成本採最近收盤價。</small>
+        </fieldset>
       </div>
     </dialog>
     <section class="hero"><div><h2>把持股訊號放在一起看</h2><p>追蹤 MACD 零軸翻轉與交叉訊號，價格採日線收盤資料。</p><div class="status"><i class="dot"></i><span id="status">正在載入…</span></div></div><div class="badge">日線 MACD（12, 26, 9）</div></section>
@@ -117,9 +153,8 @@
         <button id="scanRetry" type="button" hidden>重新讀取結果</button>
         <a id="scanProductionLink" href="https://denny888.usdollar.win/#market-scan" hidden>查看正式站的掃描結果</a>
       </section>
-      <section class="panel"><div class="panelhead"><div><h2 id="portfolioHeading">共用持股</h2><span id="sharedEditHelp" class="sub" hidden>在這裡新增、修改或刪除持股後，所有訪客都能在公開頁看到變更。</span><span id="sheetHelp" class="sub" hidden>從 Google Sheet 匯入時，未填股數預設為 5 股，未填成本採最近收盤價。</span></div><span class="sub" id="holdingCount">0 檔</span></div>
-        <form id="holdingForm" class="form" autocomplete="off" hidden><div class="field"><label for="symbol">美股代號</label><input id="symbol" placeholder="例如 AAPL" maxlength="20" required></div><div class="field"><label for="shares">股數</label><input id="shares" type="number" min="0.000001" step="any" placeholder="10" required></div><div class="field"><label for="cost">平均持有成本（USD）</label><input id="cost" type="number" min="0" step="any" placeholder="185.50" required></div><button class="primary" type="submit">＋ 新增／更新</button></form>
-        <div id="formError" class="error"></div><div class="tablewrap"><table><thead><tr><th>代號</th><th>現價 / 成本</th><th>市值</th><th>未實現損益</th><th>MACD / 訊號</th><th id="editColumn" hidden>操作</th></tr></thead><tbody id="holdings"><tr><td colspan="6" class="empty">尚未新增持股</td></tr></tbody></table></div>
+      <section class="panel"><div class="panelhead"><h2 id="portfolioHeading">共用持股</h2><span class="sub" id="holdingCount">0 檔</span></div>
+        <div id="formError" class="error"></div><div class="tablewrap"><table><thead><tr><th>代號</th><th>現價 / 成本</th><th>市值</th><th>未實現損益</th><th>MACD / 訊號</th></tr></thead><tbody id="holdings"><tr><td colspan="5" class="empty">尚未新增持股</td></tr></tbody></table></div>
       </section>
       <section class="panel"><div class="panelhead"><div><h2>MACD 歷史圖</h2><span class="sub">日線最近 120 根</span></div><div class="charttop"><label class="sub" for="chartSymbol">代號</label><select id="chartSymbol" aria-label="選擇圖表股票"><option value="">目前無可選股票</option></select></div></div><div id="chartStats" class="chartstats"></div><div class="chartbox"><canvas id="macdChart" aria-label="MACD 線、訊號線與柱狀圖"></canvas></div><div class="chartlegend"><span class="key"><i class="swatch"></i>MACD 黑線</span><span class="key"><i class="swatch signal"></i>訊號線</span><span class="key"><i class="swatch hist"></i>柱狀圖（差值）</span><span class="key"><i class="swatch cross"></i>訊號線交叉</span><span class="key"><i class="swatch zero"></i>零軸穿越</span></div><div class="chartnote">柱狀圖 = MACD − 訊號線；金色圓點是黑線與訊號線交叉，青色菱形是 MACD 黑線穿越零軸。MACD 計算為 EMA(12) − EMA(26)，訊號線為其 EMA(9)。</div></section>
       <section class="panel"><div class="panelhead"><h2>訊號紀錄</h2><span class="sub">最新 100 筆</span></div><div id="alerts" class="alertlist"><div class="empty">目前沒有訊號</div></div></section>
@@ -341,19 +376,26 @@
     $('#detailBody').addEventListener('click',e=>{const days=e.target.dataset.days;if(!days)return;detailDays=Number(days);drawDetailCharts()});$('#detailClose').addEventListener('click',()=>{$('#detailModal').hidden=true;document.body.style.overflow=''});$('#detailModal').addEventListener('click',e=>{if(e.target.id==='detailModal'){$('#detailModal').hidden=true;document.body.style.overflow=''}});window.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#detailModal').hidden){$('#detailModal').hidden=true;document.body.style.overflow=''}});window.addEventListener('resize',()=>{if(!$('#detailModal').hidden&&detailData)drawDetailCharts()});
     const managerPage = location.pathname === '/manage' || location.pathname.startsWith('/manage/');
     let publicShared = true, canEdit = false;
+    const manageDialog = $('#manageDialog'), manageControls = $('#manageControls');
+    const manageStatus = $('#manageStatus'), holdingForm = $('#holdingForm');
+    let editorSession = 0, pendingEdit = Promise.resolve();
+
+    async function fetchMode(path) {
+      const response = await fetch(path, {cache:'no-store', redirect:'error', headers:{Accept:'application/json'}});
+      const json = response.headers.get('Content-Type')?.includes('application/json');
+      if (response.ok && json) return response.json();
+      if (response.status === 404 || (response.ok && !json)) return null;
+      throw new Error('無法確認管理持股權限。');
+    }
 
     async function loadSiteMode() {
       try {
         const endpoint = managerPage ? '/manage/api/site-mode' : '/api/site-mode';
-        const response = await fetch(endpoint, {cache: 'no-store', headers: {Accept: 'application/json'}});
-        const json = response.headers.get('Content-Type')?.includes('application/json');
-        if (response.ok && json && !response.redirected) {
-          const mode = await response.json();
-          if (typeof mode.publicShared === 'boolean' && typeof mode.canEdit === 'boolean') {
-            publicShared = mode.publicShared;
-            canEdit = mode.canEdit && (!publicShared || managerPage);
-          }
-        } else if (!managerPage && !response.redirected && (response.status === 404 || (response.ok && !json))) {
+        const mode = await fetchMode(endpoint);
+        if (typeof mode?.publicShared === 'boolean' && typeof mode.canEdit === 'boolean') {
+          publicShared = mode.publicShared;
+          canEdit = mode.canEdit && (!publicShared || managerPage);
+        } else if (!mode && !managerPage) {
           const host = location.hostname;
           const legacy = ['localhost', '127.0.0.1', '[::1]'].includes(host) ||
             host.endsWith('.workers.dev') || host.endsWith('.chatgpt.site');
@@ -362,44 +404,173 @@
       } catch {
         // A guest can still read the portfolio if the permissions request fails.
       }
-      $('#portfolioHeading').textContent = publicShared ? (canEdit ? '編輯共用持股' : '共用持股') : '我的持股';
-      $('#sharedEditHelp').hidden = !(publicShared && canEdit);
-      $('#manageLink').hidden = !publicShared;
-      if (managerPage && publicShared) {
-        $('#manageLink').href = '/';
-        $('#manageLink').textContent = '查看公開頁';
+      $('#portfolioHeading').textContent = publicShared ? '共用持股' : '我的持股';
+      $('#manageLink').hidden = !publicShared && !canEdit;
+    }
+
+    function renderEditorRows(holdings) {
+      const body = $('#manageRows');
+      body.replaceChildren();
+      if (!holdings.length) {
+        const cell = body.insertRow().insertCell();
+        cell.colSpan = 4;
+        cell.className = 'empty';
+        cell.textContent = '尚未新增持股';
       }
-      for (const id of ['#holdingForm', '#editColumn', '#refreshBtn', '#sheetHelp']) $(id).hidden = !canEdit;
+      for (const holding of holdings) {
+        const row = body.insertRow();
+        for (const value of [holding.symbol, holding.shares, holding.cost]) row.insertCell().textContent = value;
+        const actions = row.insertCell();
+        actions.className = 'row-actions';
+        const edit = document.createElement('button');
+        edit.textContent = '編輯';
+        edit.setAttribute('aria-label', '編輯 ' + holding.symbol);
+        edit.onclick = () => {
+          $('#symbol').value = holding.symbol;
+          $('#shares').value = holding.shares;
+          $('#cost').value = holding.cost;
+          $('#shares').focus();
+        };
+        const remove = document.createElement('button');
+        remove.textContent = '刪除';
+        remove.className = 'del';
+        remove.setAttribute('aria-label', '刪除 ' + holding.symbol);
+        remove.onclick = () => {
+          if (confirm(`從${publicShared ? '共用' : '我的'}持股刪除 ${holding.symbol}？`)) {
+            changeHoldings('holdings/' + encodeURIComponent(holding.symbol), {method:'DELETE'}, holding.symbol + ' 已刪除');
+          }
+        };
+        actions.append(edit, remove);
+      }
     }
 
-    function editApi(path, options) {
-      if (!canEdit) throw new Error('請從「管理持股」進入編輯頁。');
-      return api((publicShared ? '/manage/api/' : '/api/') + path, options);
+    async function openManager() {
+      const session = ++editorSession;
+      holdingForm.reset();
+      manageControls.hidden = manageControls.disabled = true;
+      $('#manageFallback').hidden = true;
+      $('#sharedEditHelp').hidden = !publicShared;
+      manageStatus.textContent = '正在讀取持股…';
+      try {
+        manageDialog.showModal();
+      } catch {
+        if (!managerPage) {
+          location.assign('/manage/');
+          return;
+        }
+        manageDialog.classList.add('inline-manager');
+        manageDialog.setAttribute('open', '');
+        manageDialog.querySelector('form[method="dialog"]').onsubmit = event => {
+          event.preventDefault();
+          location.replace('/');
+        };
+      }
+      try {
+        if (publicShared) {
+          const mode = await fetchMode('/manage/api/site-mode');
+          if (mode?.publicShared !== true || mode.canEdit !== true) throw new Error();
+        } else if (!canEdit) throw new Error();
+      } catch {
+        if (session !== editorSession) return;
+        manageStatus.textContent = '無法確認編輯權限，請重新開啟管理頁面。';
+        $('#manageFallback').hidden = false;
+        return;
+      }
+      try {
+        await pendingEdit;
+        const holdings = await api('/api/holdings', {cache:'no-store'});
+        if (session !== editorSession) return;
+        renderEditorRows(holdings);
+        manageStatus.textContent = '';
+        manageControls.hidden = manageControls.disabled = false;
+      } catch {
+        if (session === editorSession) manageStatus.textContent = '持股清單載入失敗，請關閉後重試。';
+      }
     }
 
-    function deleteCell(symbol) {
-      return canEdit ? `<td><button class="del" data-delete="${symbol}" aria-label="刪除 ${symbol}">刪除</button></td>` : '';
+    function changeHoldings(path, options, message) {
+      if (!manageDialog.hasAttribute('open') || manageControls.disabled) return;
+      const session = editorSession;
+      manageControls.disabled = true;
+      manageStatus.textContent = '正在更新持股…';
+      pendingEdit = (async () => {
+        try {
+          const response = await api((publicShared ? '/manage/api/' : '/api/') + path, {...options, redirect:'error'});
+          if (response.error) throw new Error(response.error);
+          void renderHoldings();
+          if (options.method === 'POST') void scan(publicShared ? '/manage/api/scan' : '/api/scan');
+          if (session !== editorSession) return;
+          holdingForm.reset();
+          manageStatus.textContent = message;
+          try {
+            const holdings = await api('/api/holdings', {cache:'no-store'});
+            if (session === editorSession) renderEditorRows(holdings);
+          } catch {
+            if (session === editorSession) {
+              manageControls.hidden = true;
+              manageStatus.textContent = message + '，請重新開啟視窗以讀取最新清單。';
+            }
+          }
+        } catch (error) {
+          if (session === editorSession) {
+            manageStatus.textContent = error.message;
+            if (error.status === 401 || error.status === 403) {
+              manageControls.hidden = true;
+              $('#manageFallback').hidden = false;
+            }
+          }
+        } finally {
+          if (session === editorSession) manageControls.disabled = manageControls.hidden;
+        }
+      })();
     }
 
-    async function api(path,options={}){const r=await fetch(path,{headers:{'Content-Type':'application/json',...(options.headers||{})},...options});const data=await r.json();if(!r.ok)throw new Error(data.error||'請求失敗');return data}
+    $('#manageLink').addEventListener('click', event => {
+      if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+      event.preventDefault();
+      if (!manageDialog.hasAttribute('open')) openManager();
+    });
+    manageDialog.addEventListener('click', event => {
+      if (event.target === manageDialog && !manageDialog.classList.contains('inline-manager')) manageDialog.close();
+    });
+    manageDialog.addEventListener('close', () => {
+      if (manageDialog.open) return;
+      ++editorSession;
+      manageControls.disabled = true;
+      if (managerPage) location.replace('/');
+      else $('#manageLink').focus({preventScroll:true});
+    });
+    async function api(path, options = {}) {
+      const response = await fetch(path, {...options, headers:{'Content-Type':'application/json', ...options.headers}});
+      const isJson = response.headers.get('Content-Type')?.includes('application/json');
+      const data = isJson ? await response.json() : null;
+      if (!response.ok || !isJson) {
+        const error = new Error(data?.error || '無法讀取伺服器回應，請再試一次。');
+        error.status = response.status;
+        throw error;
+      }
+      return data;
+    }
     function toast(text){const el=$('#toast');el.textContent=text;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2700)}
+    let portfolioRequest = 0;
     async function renderHoldings() {
+      const request = ++portfolioRequest;
       try {
         const data = await api('/api/quotes');
+        if (request !== portfolioRequest) return;
         $('#holdingCount').textContent = `${data.holding_count} 檔`;
         const rows = data.quotes.map(h => `<tr>
           <td><button class="tickerlink" data-detail="${h.symbol}">${h.symbol}</button><small class="muted">${h.date} 日線</small></td>
           <td>${money(h.price)}<small class="muted">成本 ${h.cost>0?money(h.cost):'待填'}</small></td>
           <td>${h.shares>0?money(h.value):'待填'}<small class="muted">${h.shares>0?`${h.shares} 股`:'股數待填'}</small></td>
           <td class="${h.pnl===null?'muted':h.pnl>=0?'positive':'negative'}">${h.pnl===null?'待填':money(h.pnl)}<small>${h.pnl_pct===null?'':pct(h.pnl_pct)}</small></td>
-          <td><span class="signal">${h.macd>=h.signal?'多方':'空方'}</span><small class="muted">${h.macd.toFixed(3)} / ${h.signal.toFixed(3)}</small></td>
-          ${deleteCell(h.symbol)}</tr>`);
+          <td><span class="signal">${h.macd>=h.signal?'多方':'空方'}</span><small class="muted">${h.macd.toFixed(3)} / ${h.signal.toFixed(3)}</small></td></tr>`);
         for (const item of data.errors) {
           rows.push(`<tr><td><button class="tickerlink" data-detail="${item.symbol}">${item.symbol}</button></td>
-            <td colspan="4" class="muted">等待有效的 yfinance 報價</td>${deleteCell(item.symbol)}</tr>`);
+            <td colspan="4" class="muted">等待有效的 yfinance 報價</td></tr>`);
         }
         $('#holdings').innerHTML = rows.join('') ||
-          `<tr><td colspan="${canEdit ? 6 : 5}" class="empty">尚未新增持股</td></tr>`;
+          `<tr><td colspan="5" class="empty">尚未新增持股</td></tr>`;
         const errors = data.errors.map(e => `${e.symbol}：${e.error}`);
         if (canEdit && data.sheet.error) errors.push(`Google Sheet 同步：${data.sheet.error}`);
         $('#formError').textContent = errors.join('；');
@@ -408,26 +579,58 @@
           '<option value="">目前無可選股票</option>';
         if (data.quotes.some(h => h.symbol === previous)) select.value = previous;
         else if (data.quotes.length) select.selectedIndex = 0;
-        if (select.value) await loadChart(select.value);
-        else { chartData = []; chartData.symbol = ''; drawChart([]); }
+        await loadChart(select.value);
+        if (request !== portfolioRequest) return;
         const sheet = canEdit && data.sheet.configured ? `Google Sheet 同步 ${data.sheet.count} 檔 · ` : '';
         const updated = new Date().toLocaleTimeString('zh-TW', {hour:'2-digit', minute:'2-digit'});
         $('#status').textContent = `${sheet}行情更新 ${updated}`;
       } catch (error) {
-        $('#status').textContent = error.message;
+        if (request === portfolioRequest) $('#status').textContent = error.message;
       }
     }
     function drawChart(points){const canvas=$('#macdChart'),box=canvas.parentElement,w=box.clientWidth,h=box.clientHeight,dpr=window.devicePixelRatio||1;canvas.width=Math.max(1,Math.round(w*dpr));canvas.height=Math.max(1,Math.round(h*dpr));const c=canvas.getContext('2d');c.scale(dpr,dpr);c.clearRect(0,0,w,h);if(!points.length){c.fillStyle='#607086';c.font='12px system-ui';c.textAlign='center';c.fillText('新增持股後顯示 MACD 歷史圖',w/2,h/2);return}const left=48,right=12,top=14,bottom=24,pw=w-left-right,ph=h-top-bottom;const vals=points.flatMap(p=>[p.macd,p.signal,p.histogram,0]);let min=Math.min(...vals),max=Math.max(...vals);if(max===min){max+=1;min-=1}const pad=(max-min)*.12;min-=pad;max+=pad;const x=i=>left+i*pw/Math.max(1,points.length-1),y=v=>top+(max-v)/(max-min)*ph,zero=y(0);c.font='10px system-ui';c.textAlign='right';c.textBaseline='middle';for(let j=0;j<=4;j++){const v=max-(max-min)*j/4,yy=y(v);c.strokeStyle='#cbd3dc';c.lineWidth=.7;c.beginPath();c.moveTo(left,yy);c.lineTo(w-right,yy);c.stroke();c.fillStyle='#536174';c.fillText(v.toFixed(2),left-7,yy)}c.strokeStyle='#5b6572';c.lineWidth=1.2;c.beginPath();c.moveTo(left,zero);c.lineTo(w-right,zero);c.stroke();const bw=Math.max(1,Math.min(9,pw/points.length*.62));points.forEach((p,i)=>{const yy=y(p.histogram);c.fillStyle=p.histogram>=0?'rgba(49,150,190,.78)':'rgba(220,84,103,.78)';c.fillRect(x(i)-bw/2,Math.min(yy,zero),bw,Math.max(1,Math.abs(zero-yy)))});function line(key,color,width){c.beginPath();points.forEach((p,i)=>i?c.lineTo(x(i),y(p[key])):c.moveTo(x(i),y(p[key])));c.strokeStyle=color;c.lineWidth=width;c.lineJoin='round';c.lineCap='round';c.stroke()}line('signal','#e44e62',2);line('macd','#090d14',2.4);for(let i=1;i<points.length;i++){const a=points[i-1],b=points[i];if((a.macd<=a.signal&&b.macd>b.signal)||(a.macd>=a.signal&&b.macd<b.signal)){c.beginPath();c.arc(x(i),y(b.macd),3.2,0,Math.PI*2);c.fillStyle='#ffc044';c.fill();c.strokeStyle='#795818';c.lineWidth=.8;c.stroke()}if((a.macd<=0&&b.macd>0)||(a.macd>=0&&b.macd<0)){const xx=x(i);c.beginPath();c.moveTo(xx,zero-4);c.lineTo(xx+4,zero);c.lineTo(xx,zero+4);c.lineTo(xx-4,zero);c.closePath();c.fillStyle='#32aaa1';c.fill();c.strokeStyle='#176c67';c.lineWidth=.8;c.stroke()}}c.textBaseline='top';c.textAlign='center';c.fillStyle='#536174';[0,.25,.5,.75,1].forEach(t=>{const i=Math.round((points.length-1)*t);c.fillText(points[i].date.slice(5),x(i),h-bottom+6)})}
-    async function loadChart(symbol){if(!symbol){chartData=[];chartData.symbol='';drawChart([]);return}try{const data=await api(`/api/history/${encodeURIComponent(symbol)}`);chartData=data.points;chartData.symbol=symbol;const p=chartData.at(-1);$('#chartStats').innerHTML=`<span>${symbol}　收盤 <b>${money(p.close)}</b></span><span>MACD 黑線 <b style="color:#e9eef8">${p.macd.toFixed(4)}</b></span><span>訊號線 <b style="color:#ff7381">${p.signal.toFixed(4)}</b></span><span>柱狀圖 <b style="color:${p.histogram>=0?'#48d4a0':'#ff7381'}">${p.histogram.toFixed(4)}</b></span><span>${p.date}</span>`;drawChart(chartData)}catch(e){$('#chartStats').textContent=e.message;chartData=[];drawChart([])}}
+    let chartRequest = 0;
+    async function loadChart(symbol) {
+      const request = ++chartRequest;
+      if (!symbol) {
+        chartData = [];
+        $('#chartStats').textContent = '';
+        drawChart(chartData);
+        return;
+      }
+      try {
+        const data = await api('/api/history/' + encodeURIComponent(symbol));
+        if (request !== chartRequest) return;
+        chartData = data.points;
+        chartData.symbol = symbol;
+        const p = chartData.at(-1);
+        $('#chartStats').innerHTML=`<span>${symbol}　收盤 <b>${money(p.close)}</b></span><span>MACD 黑線 <b style="color:#e9eef8">${p.macd.toFixed(4)}</b></span><span>訊號線 <b style="color:#ff7381">${p.signal.toFixed(4)}</b></span><span>柱狀圖 <b style="color:${p.histogram>=0?'#48d4a0':'#ff7381'}">${p.histogram.toFixed(4)}</b></span><span>${p.date}</span>`;
+        drawChart(chartData);
+      } catch (error) {
+        if (request !== chartRequest) return;
+        $('#chartStats').textContent = error.message;
+        chartData = [];
+        drawChart(chartData);
+      }
+    }
     $('#chartSymbol').addEventListener('change',e=>loadChart(e.target.value));window.addEventListener('resize',()=>drawChart(chartData));
     async function renderAlerts(){try{const rows=await api('/api/alerts');$('#alerts').innerHTML=rows.length?rows.map(a=>`<div class="alertitem"><div class="alerticon">${a.kind==='golden_cross'?'↗':a.kind==='death_cross'?'↘':a.kind==='macd_positive'?'＋':'−'}</div><div><strong>${a.symbol} · ${a.label}</strong><small>MACD ${Number(a.macd).toFixed(3)}　訊號 ${Number(a.signal).toFixed(3)}</small></div><span class="alertdate">${a.date}</span></div>`).join(''):'<div class="empty">目前沒有訊號</div>'}catch{}}
-    async function scan(){try{const result=canEdit ? await editApi('scan',{method:'POST'}) : await api('/api/scan',{method:'POST'});for(const a of result.alerts){toast(`${a.symbol}｜${a.label}`);if('serviceWorker'in navigator&&'Notification'in window&&Notification.permission==='granted'){const reg=await navigator.serviceWorker.ready;reg.showNotification(`${a.symbol}｜${a.label}`,{body:`${a.date} · MACD ${a.macd}，訊號 ${a.signal}`,icon:'/icon.svg',tag:`${a.symbol}-${a.kind}-${a.date}`})}}if(result.errors.length)$('#formError').textContent=result.errors.map(e=>`${e.symbol}：${e.error}`).join('；');await renderAlerts()}catch(e){$('#status').textContent=`掃描失敗：${e.message}`}}
-    $('#holdingForm').addEventListener('submit',async e=>{e.preventDefault();if(!canEdit)return;$('#formError').textContent='';try{await editApi('holdings',{method:'POST',body:JSON.stringify({symbol:$('#symbol').value,shares:$('#shares').value,cost:$('#cost').value})});$('#symbol').value='';$('#shares').value='';$('#cost').value='';toast('持股已儲存');await renderHoldings();await scan()}catch(err){$('#formError').textContent=err.message}});
-    $('#holdings').addEventListener('click',async e=>{const detail=e.target.dataset.detail;if(detail){openStockDetail(detail);return}const symbol=e.target.dataset.delete;if(!symbol||!canEdit)return;if(!confirm(publicShared ? `從共用持股刪除 ${symbol}？所有訪客都會看到這項變更。` : `刪除 ${symbol} 持股？`))return;try{await editApi(`holdings/${encodeURIComponent(symbol)}`,{method:'DELETE'});await renderHoldings();toast(`${symbol} 已刪除`)}catch(err){toast(err.message)}});
-    $('#refreshBtn').addEventListener('click',async()=>{if(!canEdit)return;try{await editApi('sync-sheet',{method:'POST'});await renderHoldings();await scan()}catch(e){toast(e.message)}});$('#notifyBtn').addEventListener('click',async()=>{if(!('Notification'in window)){toast('此瀏覽器不支援通知');return}const p=await Notification.requestPermission();toast(p==='granted'?'通知已開啟':'尚未允許通知')});
+    async function scan(endpoint = publicShared && canEdit ? '/manage/api/scan' : '/api/scan'){try{const result=await api(endpoint,{method:'POST'});for(const a of result.alerts){toast(`${a.symbol}｜${a.label}`);if('serviceWorker'in navigator&&'Notification'in window&&Notification.permission==='granted'){const reg=await navigator.serviceWorker.ready;reg.showNotification(`${a.symbol}｜${a.label}`,{body:`${a.date} · MACD ${a.macd}，訊號 ${a.signal}`,icon:'/icon.svg',tag:`${a.symbol}-${a.kind}-${a.date}`})}}if(result.errors.length)$('#formError').textContent=result.errors.map(e=>`${e.symbol}：${e.error}`).join('；');await renderAlerts()}catch(e){$('#status').textContent=`掃描失敗：${e.message}`}}
+    holdingForm.addEventListener('submit', event => {
+      event.preventDefault();
+      const holding = {symbol:$('#symbol').value, shares:$('#shares').value, cost:$('#cost').value};
+      changeHoldings('holdings', {method:'POST', body:JSON.stringify(holding)}, '持股已儲存');
+    });
+    $('#refreshBtn').addEventListener('click', () => changeHoldings('sync-sheet', {method:'POST'}, '持股已同步'));
+    $('#holdings').addEventListener('click', event => {
+      const symbol = event.target.closest('[data-detail]')?.dataset.detail;
+      if (symbol) openStockDetail(symbol);
+    });
+    $('#notifyBtn').addEventListener('click',async()=>{if(!('Notification'in window)){toast('此瀏覽器不支援通知');return}const p=await Notification.requestPermission();toast(p==='granted'?'通知已開啟':'尚未允許通知')});
     if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});
     async function start() {
       await loadSiteMode();
+      if (managerPage) openManager();
       await renderHoldings();
       await scan();
       setInterval(async () => {

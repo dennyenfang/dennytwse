@@ -37,7 +37,7 @@ python app.py
 
 正式服務使用 Gunicorn。Cloudflare Tunnel 連到 `http://127.0.0.1:5001`。任何人都可以使用行情掃描並查看同一份持股，包含股數及成本。[公開網站](https://denny888.usdollar.win/)
 
-任何人都可從「管理持股」免登入新增、修改和刪除持股。所有訪客共用同一份清單，變更會反映在公開首頁。[管理持股](https://denny888.usdollar.win/manage/)
+點首頁的「管理持股」會開啟彈出視窗。任何人都能免登入新增、編輯和刪除共用持股，關閉視窗後可繼續查看原先的掃描篩選。[直接開啟管理持股](https://denny888.usdollar.win/manage/)
 
 在具備 user systemd、linger、Bubblewrap、Git、curl 及 Python 3.10+（含 venv）的 Linux 主機上，將此 repo 唯讀 deploy key 的私鑰存入 `~/.config/denny888/deploy_key`，將該目錄及私鑰的權限分別設為 `0700`、`0600`。部署程式使用嚴格主機驗證，請將已核對的 GitHub SSH 主機公鑰存入同目錄的 `known_hosts`。[GitHub 官方指紋](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/githubs-ssh-key-fingerprints)
 
