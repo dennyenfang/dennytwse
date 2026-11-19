@@ -168,7 +168,7 @@ def download(symbols, *, start=None, end=None, **kwargs):
     if not symbols:
         return pd.DataFrame()
     end_day = pd.Timestamp(end).date() - pd.Timedelta(days=1) if end else date.today()
-    start_day = max(pd.Timestamp(start).date() if start else end_day - pd.Timedelta(days=140), end_day - pd.Timedelta(days=140))
+    start_day = max(pd.Timestamp(start).date() if start else end_day - pd.Timedelta(days=210), end_day - pd.Timedelta(days=210))
     cache_key = (start_day.isoformat(), end_day.isoformat())
     cached = _SCAN_CACHE.get(cache_key)
     if cached and time.monotonic() - cached[0] < 600:
