@@ -20,6 +20,10 @@
     .detail-dialog{background:#fff;color:#27343f;border:1px solid #d8e0e7;box-shadow:0 24px 80px #0c243018}.detail-head{border-bottom:1px solid #e5ebf0;padding-bottom:10px}.detail-head h2{font:600 20px/1.1 ui-monospace,SFMono-Regular,Menlo,monospace;color:#1e2a34}.detail-head #detailClose{background:#fff;color:#566675;border-color:#d8e0e7}.detail-head .sub{color:#758391}.detail-quote{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 1px 8px}.detail-price-row{display:flex;align-items:baseline;gap:10px}.detail-price{font:500 27px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:#202b34}.detail-daychange{font:600 12px ui-monospace,SFMono-Regular,Menlo,monospace}.detail-lamps{display:flex;gap:6px;flex-wrap:wrap}.detail-lamp{display:flex;align-items:center;gap:6px;border:1px solid #dce3e9;border-radius:999px;padding:5px 8px;color:#596876;background:#f8fafc;font-size:10px;font-weight:700}.detail-lamp i{width:9px;height:9px;border-radius:50%;display:block}.detail-lamp .green{background:#18a85b;box-shadow:0 0 6px #18a85b80}.detail-lamp .red{background:#e34850;box-shadow:0 0 6px #e3485080}.detail-lamp .yellow{background:#f2bb32;box-shadow:0 0 6px #f2bb3280}.detail-lamp .black{background:#12171c;border:1px solid #12171c}.detail-ranges{margin:7px 0 9px;color:#6f7e8b;font-size:11px;align-items:center}.detail-ranges .range-label{font-weight:700;margin-right:3px}.detail-ranges button{min-width:38px;border:1px solid #dce3ea;background:#fff;color:#637383;border-radius:7px;padding:6px 8px;font:500 10px ui-monospace,SFMono-Regular,Menlo,monospace}.detail-ranges button.active{background:#17365d;border-color:#17365d;color:#fff}.detailstats{grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border-top:1px solid #e4e9ee;border-bottom:1px solid #e4e9ee;margin:10px 0 12px;padding:10px 0;background:#fff}.detailstat{background:#fff;border:0;border-right:1px solid #e4e9ee;border-radius:0;padding:3px 9px}.detailstat:first-child{padding-left:0}.detailstat:last-child{border-right:0}.detailstat small{color:#748290;font-size:9px;letter-spacing:.08em;margin-bottom:3px}.detailstat b{color:#34424f;font:500 11px ui-monospace,SFMono-Regular,Menlo,monospace;white-space:nowrap}.detailchart{margin:0}.detailchart h3{color:#64727e;font:600 10px ui-monospace,SFMono-Regular,Menlo,monospace;margin:4px 0 0}.detail-chart-wrap{position:relative;height:360px;background:#fff;border-top:1px solid #e4e9ee;border-bottom:1px solid #e4e9ee;overflow:hidden}.detail-chart-wrap canvas{width:100%;height:100%;display:block}.detail-chart-label{position:absolute;left:auto;right:10px;color:#72808d;font:9px ui-monospace,SFMono-Regular,Menlo,monospace;z-index:2;pointer-events:none}.detail-chart-label.price-label{top:6px}.detail-chart-label.volume-label{top:51%}.detail-chart-label.macd-label{top:72%}.detail-tooltip{display:none;position:absolute;z-index:3;pointer-events:none;background:#16202aef;border:1px solid #344656;border-radius:7px;padding:6px 8px;font:10px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;color:#f5f7f9;white-space:nowrap;box-shadow:0 8px 24px #1d354455}.detail-events{gap:0;border-top:1px solid #e4e9ee}.detail-event{background:#fff;border-bottom:1px solid #edf1f4;border-radius:0;padding:8px 3px;color:#35424e}.detail-event time{font:11px ui-monospace,SFMono-Regular,Menlo,monospace;color:#657482}.detail-section-title{display:flex;justify-content:space-between;align-items:center;margin:12px 0 5px}.detail-section-title h3{font-size:11px;color:#52616d;margin:0}.detail-legend{display:flex;gap:12px;flex-wrap:wrap;color:#6f7e8b;font-size:9px;margin:5px 0 8px}.detail-legend span{display:inline-flex;align-items:center;gap:5px}.detail-legend i{width:13px;height:2px;background:#12171c}.detail-legend .redline{background:#e34850}.detail-legend .bluebar{width:8px;height:8px;background:#17365d}.detail-legend .triangle{width:9px;height:8px;background:#18a85b;clip-path:polygon(50% 0,100% 100%,0 100%);position:relative}.detail-legend .triangle:after{content:"";position:absolute;inset:2px 2px 1px;background:#fff;clip-path:polygon(50% 0,100% 100%,0 100%)}.detail-legend .down-triangle{transform:rotate(180deg)}@media(max-width:600px){.detail-overlay{padding:0;align-items:end}.detail-dialog{width:100%;max-height:96vh;border-radius:16px 16px 0 0;padding:13px 14px 12px}.detail-head h2{font-size:17px}.detail-price{font-size:24px}.detail-quote{align-items:flex-start;flex-direction:column}.detail-lamps{gap:5px}.detailstats{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:7px}.detailstat:nth-child(2){border-right:0}.detailstat:nth-child(3){padding-left:0}.detail-chart-wrap{height:320px}.detail-chart-label{font-size:8px}}
     .grid > main { min-width:0; }
     #scanEmpty { margin:0; }
+    .scanfilters { flex-wrap:wrap; }
+    .scanfilters button { display:inline-grid; justify-items:center; gap:2px; line-height:1.3; }
+    .filter-count { color:var(--muted); font-size:11px; font-variant-numeric:tabular-nums; }
+    .scanfilters .active .filter-count { color:inherit; }
     #scanMissing { margin-top:12px; font-size:13px; color:var(--muted); }
     #scanMissing summary { cursor:pointer; }
     #scanMissing ul { margin:8px 0; padding-left:22px; }
@@ -184,11 +188,11 @@
       timeZone:'Asia/Taipei', month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit', hour12:false
     });
 
-    function matchesFilter(row) {
-      if (marketFilter === 'all') return true;
-      if (marketFilter === 'spike') return row.spike;
-      if (marketFilter.startsWith('spike_')) return row.spike && row[marketFilter.slice(6)] === row.date;
-      return Boolean(row[marketFilter]);
+    function matchesFilter(row, key) {
+      if (key === 'all') return true;
+      if (key === 'spike') return row.spike;
+      if (key.startsWith('spike_')) return row.spike && row[key.slice(6)] === row.date;
+      return Boolean(row[key]);
     }
 
     function marketRow(row) {
@@ -239,7 +243,12 @@
       const groupRows = all ? snapshot.rows : snapshot.rows.filter(row => row.groups.includes(group));
       const coverage = all ? snapshot : snapshot.groups[group];
       showMissingTargets(group);
-      const rows = groupRows.filter(matchesFilter);
+      const rows = groupRows.filter(row => matchesFilter(row, marketFilter));
+      for (const button of filterBar.children) {
+        const key = button.dataset.filter;
+        const count = key === marketFilter ? rows.length : groupRows.filter(row => matchesFilter(row, key)).length;
+        button.querySelector('.filter-count').textContent = `${count} 檔`;
+      }
       rows.sort((a, b) => {
         const first = a[marketSort], second = b[marketSort];
         const order = typeof first === 'number' && typeof second === 'number'
@@ -331,6 +340,13 @@
       button.type = 'button';
       button.dataset.filter = key;
       button.textContent = label;
+      const count = document.createElement('span');
+      count.className = 'filter-count';
+      count.id = 'filter-count-' + key;
+      count.textContent = '—';
+      button.append(count);
+      button.setAttribute('aria-label', label);
+      button.setAttribute('aria-describedby', count.id);
       button.classList.toggle('active', key === marketFilter);
       button.setAttribute('aria-pressed', String(key === marketFilter));
       filterBar.append(button);
